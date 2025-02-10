@@ -38,7 +38,7 @@ ARG CURL_VERSION="=8.12.0-r0"
 # renovate: datasource=repology depName=alpine_3_21/gettext versioning=loose
 ARG GETTEXT_VERSION="=0.22.5-r0"
 # renovate: datasource=repology depName=alpine_3_21/libssl3 versioning=loose
-ARG LIBSSL3_VERSION="=3.3.2-r5"
+ARG LIBSSL3_VERSION="=3.3.2-r6"
 
 
 # Install packages
