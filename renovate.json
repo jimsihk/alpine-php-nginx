@@ -11,7 +11,9 @@
       "automerge": true,
       "automergeType": "pr",
       "platformAutomerge": true,
-      "excludePackageNames": ["alpine"]
+      "excludePackageNames": ["alpine"],
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-minor-patch",
     },
     {
       "matchPackageNames": ["alpine"],
