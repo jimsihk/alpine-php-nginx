@@ -109,8 +109,8 @@ RUN apk --no-cache add \
 
 # Workaround for using gnu-iconv instead of iconv in PHP on Alpine
 # https://github.com/docker-library/php/issues/240#issuecomment-876464325
-COPY --from=build /usr/lib/preloadable_libiconv.so /usr/lib/preloadable_libiconv.so
-ENV LD_PRELOAD=/usr/lib/preloadable_libiconv.so
+#COPY --from=build /usr/lib/preloadable_libiconv.so /usr/lib/preloadable_libiconv.so
+#ENV LD_PRELOAD=/usr/lib/preloadable_libiconv.so
 
 # Add configuration files
 COPY --chown=nobody rootfs/ /
