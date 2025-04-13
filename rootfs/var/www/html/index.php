@@ -8,7 +8,7 @@ error_reporting(E_ALL);
 $text = "This is the Euro symbol '€'.";
 $result = iconv("UTF-8", "ASCII//TRANSLIT//IGNORE", $text);
 if ($result === false) {
-    echo "iconv test failed: " . error_get_last()['message'] . "\n";
+    print_r("iconv test failed: " . error_get_last()['message'] . "\n");
 } else {
-    echo "iconv test passed: $result\n";
+    print_r("iconv test passed: $result\n");
 }
