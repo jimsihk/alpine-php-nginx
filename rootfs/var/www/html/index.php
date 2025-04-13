@@ -10,5 +10,5 @@ $result = iconv("UTF-8", "ASCII//TRANSLIT//IGNORE", $text);
 if ($result === false) {
     echo "iconv test failed: " . error_get_last()['message'] . "\n";
 } else {
-    echo "iconv test succeeded: $result\n";
+    echo "iconv test passed: $result\n";
 }
