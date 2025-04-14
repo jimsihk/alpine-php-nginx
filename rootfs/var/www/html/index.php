@@ -8,5 +8,6 @@ $result = iconv("UTF-8", "ASCII//TRANSLIT//IGNORE", $text);
 
 // Output PHP version if all test passed
 if ($result === false) {
-    printf(phpversion());
+    $version = phpversion();
+    printf($version);
 }
