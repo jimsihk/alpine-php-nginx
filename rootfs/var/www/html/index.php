@@ -7,7 +7,6 @@ $text = "This is the Euro symbol '€'.";
 $result = iconv("UTF-8", "ASCII//TRANSLIT//IGNORE", $text);
 
 // Output PHP version if all test passed
-if ($result === false) {
-    $version = phpversion();
-    printf($version);
+if ($result === true) {
+    printf(phpversion());
 }
