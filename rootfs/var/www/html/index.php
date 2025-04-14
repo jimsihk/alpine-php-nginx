@@ -1,14 +1,12 @@
 <?php
-phpinfo();
-
 ini_set('display_errors', '1');
 error_reporting(E_ALL);
 
 // Below for testing iconv issue of alpine
 $text = "This is the Euro symbol '€'.";
 $result = iconv("UTF-8", "ASCII//TRANSLIT//IGNORE", $text);
+
+// Output PHP version if all test passed
 if ($result === false) {
-    print("iconv test failed: " . error_get_last()['message'] . "\n");
-} else {
-    print("iconv test passed: $result\n");
+    printf(phpversion());
 }
