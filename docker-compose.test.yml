@@ -2,6 +2,8 @@ services:
   app:
     image: ${TEST_IMAGE_NAME:-jimsihk/alpine-php-nginx:local}
     build: .
+    environment:
+      - custom_router=r.php
   sut:
     image: ${TEST_IMAGE_NAME:-jimsihk/alpine-php-nginx:local}
     depends_on:
