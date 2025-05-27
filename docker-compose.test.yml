@@ -9,5 +9,5 @@ services:
     command: /tmp/run_tests.sh
     volumes:
       - "./run_tests.sh:/tmp/run_tests.sh:ro"
-    environments:
+    environment:
       - custom_router='/r.php'
