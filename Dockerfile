@@ -36,7 +36,7 @@ ARG RUNIT_VERSION="=2.2.0-r1"
 # renovate: datasource=repology depName=alpine_3_22/curl versioning=loose
 ARG CURL_VERSION="=8.14.0-r2"
 # renovate: datasource=repology depName=alpine_3_22/gettext versioning=loose
-ARG GETTEXT_VERSION="=0.22.5-r0"
+ARG GETTEXT_VERSION="=0.24.1-r0"
 # renovate: datasource=repology depName=alpine_3_22/libssl3 versioning=loose
 ARG LIBSSL3_VERSION="=3.5.0-r0"
 
