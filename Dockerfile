@@ -139,7 +139,8 @@ ENV client_max_body_size=2M \
     opcache_jit=1235 \
     opcache_memory_consumption=128 \
     opcache_interned_strings_buffer=16 \
-    opcache_max_accelerated_files=15000
+    opcache_max_accelerated_files=15000 \
+    custom_router=''
 
 # List of config files that will be updated with environment variables using envsubst
 ENV envsubst_config_list="/etc/nginx/nginx.conf \
