@@ -22,7 +22,7 @@ ARG PHP_V=83
 ENV PHP_RUNTIME=php${PHP_V}
 ENV PHP_FPM_RUNTIME=php-fpm${PHP_V}
 # renovate: datasource=repology depName=alpine_3_22/php83 versioning=loose
-ENV PHP_VERSION="=8.3.21-r0"
+ENV PHP_VERSION="=8.3.22-r0"
 # renovate: datasource=repology depName=alpine_3_22/php83-pecl-apcu versioning=loose
 ARG PHP_PECL_APCU_VERSION="=5.1.24-r0"
 # renovate: datasource=repology depName=alpine_3_22/php83-pecl-memcached versioning=loose
@@ -34,7 +34,7 @@ ARG NGINX_VERSION="=1.28.0-r3"
 # renovate: datasource=repology depName=alpine_3_22/runit versioning=loose
 ARG RUNIT_VERSION="=2.2.0-r1"
 # renovate: datasource=repology depName=alpine_3_22/curl versioning=loose
-ARG CURL_VERSION="=8.14.0-r2"
+ARG CURL_VERSION="=8.14.1-r0"
 # renovate: datasource=repology depName=alpine_3_22/gettext versioning=loose
 ARG GETTEXT_VERSION="=0.24.1-r0"
 # renovate: datasource=repology depName=alpine_3_22/libssl3 versioning=loose
