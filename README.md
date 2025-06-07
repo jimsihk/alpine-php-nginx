@@ -1,20 +1,19 @@
-# Docker PHP-FPM 8.3 & Nginx 1.26 on Alpine Linux
+# Docker PHP-FPM & Nginx on Alpine Linux
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/jimsihk/alpine-php-nginx.svg)](https://hub.docker.com/r/jimsihk/alpine-php-nginx/)
 ![Docker Image Size](https://img.shields.io/docker/image-size/jimsihk/alpine-php-nginx)
-![nginx 1.26](https://img.shields.io/badge/nginx-1.26-brightgreen.svg)
+![nginx 1.28](https://img.shields.io/badge/nginx-1.28-brightgreen.svg)
 ![php 8.3](https://img.shields.io/badge/php-8.3-brightgreen.svg)
 ![License MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 [![Renovate](https://img.shields.io/badge/renovate-enabled-yellow.svg)](https://app.renovatebot.com/dashboard)
 
-Example PHP-FPM 8.3 & Nginx 1.26 setup for Docker, build on [Alpine Linux](https://www.alpinelinux.org/).
+PHP-FPM and Nginx setup for Docker, build on [Alpine Linux](https://www.alpinelinux.org/).
 The image is only +/- 25MB large.
 
 Repository: https://github.com/jimsihk/alpine-php-nginx
 
 * Built on the lightweight and secure Alpine Linux distribution
 * Very small Docker image size (+/-25MB)
-* Uses PHP 8.3 for better performance, lower cpu usage & memory footprint
 * Multi-arch support: 386, amd64, arm/v7, arm64, ppc64le, s390x
 * Optimized for 100 concurrent users
 * Optimized to only use resources when there's traffic (by using PHP-FPM's ondemand PM)
@@ -108,7 +107,8 @@ You can define the below environment variables to change values from NGINX and P
 
 | Server | Variable Name                   | Default   | Description                                                                                                                                                                                                                                  |
 |--------|---------------------------------|-----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| *      | envsubst_config_list            | See above | Sets the list of config files to be updsted with ENV variables                                                                                                                                                                               |
+| *      | envsubst_config_list            | See above | Sets the list of config files to be updated with ENV variables                                                                                                                                                                               |
+| NGINX  | custom_router                   |           | Set custom routing engine before the fallback to index.php                                                                                                                                                                                   |
 | NGINX  | client_max_body_size            | 2m        | Sets the maximum allowed size of the client request body, specified in the “Content-Length” request header field.                                                                                                                            |
 | PHP8   | clear_env                       | no        | Clear environment in FPM workers. Prevents arbitrary environment variables from reaching FPM worker processes by clearing the environment in workers before env vars specified in this pool configuration are added.                         |
 | PHP8   | allow_url_fopen                 | On        | Enable the URL-aware fopen wrappers that enable accessing URL object like files. Default wrappers are provided for the access of remote files using the ftp or http protocol, some extensions like zlib may register additional wrappers.    |

@@ -1,7 +1,6 @@
 ARG ARCH=
-FROM ${ARCH}alpine:3.21.3 AS build
+FROM ${ARCH}alpine:3.22.0 AS build
 
-# renovate: datasource=repology depName=alpine_3_13/gnu-libiconv versioning=loose
 ARG GNU_LIBICONV_VERSION="=1.15-r3"
 
 RUN apk --no-cache add \
@@ -10,7 +9,7 @@ RUN apk --no-cache add \
       --repository http://dl-cdn.alpinelinux.org/alpine/v3.13/community/ \
         gnu-libiconv${GNU_LIBICONV_VERSION}
 
-FROM ${ARCH}alpine:3.21.3
+FROM ${ARCH}alpine:3.22.0
 
 LABEL org.opencontainers.image.title="alpine-php-nginx" \
       org.opencontainers.image.description="Lightweight container with NGINX & PHP-FPM based on Alpine Linux." \
@@ -21,25 +20,24 @@ LABEL org.opencontainers.image.title="alpine-php-nginx" \
 ARG PHP_V=84
 ENV PHP_RUNTIME=php${PHP_V}
 ENV PHP_FPM_RUNTIME=php-fpm${PHP_V}
-# renovate: datasource=repology depName=alpine_3_21/php84 versioning=loose
-ENV PHP_VERSION="=8.4.5-r0"
-# renovate: datasource=repology depName=alpine_3_21/php84-pecl-apcu versioning=loose
+# renovate: datasource=repology depName=alpine_3_22/php84 versioning=loose
+ENV PHP_VERSION="=8.4.8-r0"
+# renovate: datasource=repology depName=alpine_3_22/php84-pecl-apcu versioning=loose
 ARG PHP_PECL_APCU_VERSION="=5.1.24-r1"
-# renovate: datasource=repology depName=alpine_3_21/php84-pecl-memcached versioning=loose
+# renovate: datasource=repology depName=alpine_3_22/php84-pecl-memcached versioning=loose
 ARG PHP_PECL_MEMCACHED_VERSION="=3.3.0-r0"
-# renovate: datasource=repology depName=alpine_3_21/php84-pecl-redis versioning=loose
+# renovate: datasource=repology depName=alpine_3_22/php84-pecl-redis versioning=loose
 ARG PHP_PECL_REDIS_VERSION="=6.2.0-r0"
-# renovate: datasource=repology depName=alpine_3_21/nginx versioning=loose
-ARG NGINX_VERSION="=1.26.3-r0"
-# renovate: datasource=repology depName=alpine_3_21/runit versioning=loose
+# renovate: datasource=repology depName=alpine_3_22/nginx versioning=loose
+ARG NGINX_VERSION="=1.28.0-r3"
+# renovate: datasource=repology depName=alpine_3_22/runit versioning=loose
 ARG RUNIT_VERSION="=2.2.0-r1"
-# renovate: datasource=repology depName=alpine_3_21/curl versioning=loose
-ARG CURL_VERSION="=8.12.1-r1"
-# renovate: datasource=repology depName=alpine_3_21/gettext versioning=loose
-ARG GETTEXT_VERSION="=0.22.5-r0"
-# renovate: datasource=repology depName=alpine_3_21/libssl3 versioning=loose
-ARG LIBSSL3_VERSION="=3.3.3-r0"
-
+# renovate: datasource=repology depName=alpine_3_22/curl versioning=loose
+ARG CURL_VERSION="=8.14.1-r0"
+# renovate: datasource=repology depName=alpine_3_22/gettext versioning=loose
+ARG GETTEXT_VERSION="=0.24.1-r0"
+# renovate: datasource=repology depName=alpine_3_22/libssl3 versioning=loose
+ARG LIBSSL3_VERSION="=3.5.0-r0"
 
 # Install packages
 RUN apk --no-cache add \
@@ -139,7 +137,8 @@ ENV client_max_body_size=2M \
     opcache_jit=1235 \
     opcache_memory_consumption=128 \
     opcache_interned_strings_buffer=16 \
-    opcache_max_accelerated_files=15000
+    opcache_max_accelerated_files=15000 \
+    custom_router=''
 
 # List of config files that will be updated with environment variables using envsubst
 ENV envsubst_config_list="/etc/nginx/nginx.conf \
