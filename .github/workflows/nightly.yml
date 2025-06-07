@@ -3,6 +3,7 @@ name: Nightly Build
 on:
   schedule:
     - cron: '00 17 * * *' #UTC
+  workflow_dispatch:
 
 permissions:
   contents: read
