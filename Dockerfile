@@ -1,7 +1,6 @@
 ARG ARCH=
 FROM ${ARCH}alpine:3.22.0 AS build
 
-# renovate: datasource=repology depName=alpine_3_13/gnu-libiconv versioning=loose
 ARG GNU_LIBICONV_VERSION="=1.15-r3"
 
 RUN apk --no-cache add \
