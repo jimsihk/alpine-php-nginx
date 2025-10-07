@@ -119,7 +119,8 @@ USER nobody
 # Add application
 WORKDIR /var/www/html
 
-ENV client_max_body_size=2M \
+ENV nginx_root_directory=/var/www/html \
+    client_max_body_size=2M \
     clear_env=no \
     allow_url_fopen=On \
     allow_url_include=Off \
