@@ -3,5 +3,8 @@
   "onboarding": false,
   "requireConfig": "optional",
   "branchPrefix": "selfrenovate/",
-  "baseBranchPatterns": ["/^feature\\/alpine-upgrade.*/"]
+  "baseBranchPatterns": ["/^feature\\/alpine-upgrade.*/"],
+  "repositories": [
+    "jimsihk/alpine-php-nginx"
+  ]
 }
