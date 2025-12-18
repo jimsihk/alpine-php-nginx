@@ -7,6 +7,9 @@
   "includePaths": [
     "Dockerfile"
   ],
+  "vulnerabilityAlerts": {
+    "enabled": false
+  },
   "repositories": [
     "jimsihk/alpine-php-nginx"
   ]
