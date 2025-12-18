@@ -2,6 +2,7 @@
   "extends": ["github>jimsihk/alpine-php-nginx:renovate"],
   "onboarding": false,
   "requireConfig": "optional",
+  "branchPrefixOld": "selfrenovate/",
   "branchPrefix": "selfrenovate/",
   "baseBranchPatterns": ["/^feature\\/alpine-upgrade.*/"],
   "includePaths": [
