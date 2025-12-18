@@ -4,6 +4,9 @@
   "requireConfig": "optional",
   "branchPrefix": "selfrenovate/",
   "baseBranchPatterns": ["/^feature\\/alpine-upgrade.*/"],
+  "includePaths": [
+    "Dockerfile"
+  ],
   "repositories": [
     "jimsihk/alpine-php-nginx"
   ]
