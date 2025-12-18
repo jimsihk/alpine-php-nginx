@@ -10,7 +10,7 @@
   "vulnerabilityAlerts": {
     "enabled": false
   },
-  "commitMessagePrefix": "[SelfRenovate] "
+  "commitMessagePrefix": "[SelfRenovate] ",
   "repositories": [
     "jimsihk/alpine-php-nginx"
   ]
