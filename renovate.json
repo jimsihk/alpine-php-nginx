@@ -31,7 +31,20 @@
       "matchCurrentVersion": "!/^0/",
       "automerge": true,
       "automergeType": "pr",
-      "platformAutomerge": true
+      "platformAutomerge": true,
+      "groupName": "Alpine base image (patch only)"
+    },
+    {
+      "matchPackageNames": [
+        "alpine"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "major"
+      ],
+      "automerge": false,
+      "groupName": "Alpine base image (minor/major)",
+      "description": "Alpine minor/major updates handled by update-alpine.yml workflow"
     }
   ],
   "customManagers": [

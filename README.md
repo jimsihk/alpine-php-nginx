@@ -169,3 +169,62 @@ RUN composer install \
 FROM quay.io/jimsihk/alpine-php-nginx
 COPY --chown=nginx --from=composer /app /var/www/html
 ```
+
+## Automated Dependency Management
+
+This repository uses a semi-automated workflow to keep Alpine Linux and its packages up-to-date:
+
+### Alpine Base Image Updates
+
+The repository includes an automated workflow (`.github/workflows/update-alpine.yml`) that:
+
+1. **Daily checks** for new Alpine Linux major/minor versions (runs at 6:00 UTC daily)
+2. **Automatically creates a PR** when a new Alpine version is detected
+3. **Updates the Dockerfile** with the new Alpine version and package repository references
+4. **Requires manual review** before merging to ensure compatibility
+
+**How it works:**
+- Monitors Docker Hub for new stable Alpine releases
+- Creates a branch named `alpine/update-to-X.Y.Z` when a minor/major version is found
+- Updates both `FROM alpine:X.Y.Z` lines in the Dockerfile
+- Updates all Renovate package references (e.g., `alpine_3_22/` → `alpine_3_23/`)
+- Creates a PR with automatic test execution
+
+**Manual steps required:**
+1. Review the automated PR created by the workflow
+2. Verify all CI tests pass (build, multi-arch, security scans)
+3. Check for any breaking changes in Alpine release notes
+4. Approve and merge the PR
+
+### Package Updates via Renovate
+
+The repository uses [Renovate bot](https://docs.renovatebot.com/) to automatically manage Alpine package versions:
+
+**Automatic updates (auto-merged):**
+- Alpine package **patch** versions (e.g., `8.4.15-r0` → `8.4.16-r0`)
+- All **non-Alpine** dependencies (minor and patch versions)
+- Grouped into a single PR for efficiency
+
+**Manual review required:**
+- Alpine package **major** versions
+- Changes to packages with version `0.x.x`
+
+**Package tracking:**
+All Alpine packages in the Dockerfile use Renovate comments for version tracking:
+```dockerfile
+# renovate: datasource=repology depName=alpine_3_22/php84 versioning=loose
+ENV PHP_VERSION="=8.4.16-r0"
+```
+
+After an Alpine base image update is merged, Renovate will automatically create follow-up PRs to update individual packages to versions compatible with the new Alpine version.
+
+### Workflow Integration
+
+The combination of GitHub Actions and Renovate ensures:
+- ✅ Alpine base image updates are never missed
+- ✅ All tests must pass before merging any update
+- ✅ Package updates happen automatically after base image updates
+- ✅ Manual oversight for potentially breaking changes
+- ✅ Dependency versions are always tracked and up-to-date
+
+You can manually trigger the Alpine update check workflow from the Actions tab in GitHub.

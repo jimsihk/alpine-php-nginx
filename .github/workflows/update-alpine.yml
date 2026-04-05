@@ -1,0 +1,211 @@
+name: Update Alpine Base Image
+
+on:
+  schedule:
+    # Run daily at 6:00 UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-alpine-version:
+    runs-on: ubuntu-latest
+    outputs:
+      has_update: ${{ steps.check.outputs.has_update }}
+      current_version: ${{ steps.check.outputs.current_version }}
+      latest_version: ${{ steps.check.outputs.latest_version }}
+      alpine_minor: ${{ steps.check.outputs.alpine_minor }}
+    steps:
+      - uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: dev
+
+      - name: Check for Alpine updates
+        id: check
+        run: |
+          # Extract current Alpine version from Dockerfile
+          CURRENT_VERSION=$(grep -m1 "FROM.*alpine:" Dockerfile | sed 's/.*alpine://;s/ .*//')
+          echo "Current Alpine version: $CURRENT_VERSION"
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+          # Get latest Alpine version from Docker Hub
+          # Fetch latest stable release (major.minor format, excluding edge/rc)
+          LATEST_VERSION=$(curl -s 'https://registry.hub.docker.com/v2/repositories/library/alpine/tags?page_size=100' | \
+            jq -r '.results[].name' | \
+            grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | \
+            sort -V | tail -1)
+
+          echo "Latest Alpine version: $LATEST_VERSION"
+          echo "latest_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+
+          # Extract major.minor version for comparison
+          CURRENT_MINOR=$(echo $CURRENT_VERSION | cut -d. -f1,2)
+          LATEST_MINOR=$(echo $LATEST_VERSION | cut -d. -f1,2)
+
+          echo "Current minor: $CURRENT_MINOR"
+          echo "Latest minor: $LATEST_MINOR"
+          echo "alpine_minor=$(echo $LATEST_VERSION | cut -d. -f1,2 | tr '.' '_')" >> $GITHUB_OUTPUT
+
+          # Check if there's a minor or major version update
+          if [ "$CURRENT_MINOR" != "$LATEST_MINOR" ]; then
+            echo "has_update=true" >> $GITHUB_OUTPUT
+            echo "New Alpine minor/major version available: $LATEST_VERSION"
+          else
+            echo "has_update=false" >> $GITHUB_OUTPUT
+            echo "No Alpine minor/major version update available"
+          fi
+
+  update-alpine-dependencies:
+    needs: check-alpine-version
+    if: needs.check-alpine-version.outputs.has_update == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: dev
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create update branch
+        id: create_branch
+        run: |
+          BRANCH_NAME="alpine/update-to-${{ needs.check-alpine-version.outputs.latest_version }}"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+          # Check if branch already exists
+          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
+            echo "Branch $BRANCH_NAME already exists, will update it"
+            git fetch origin "$BRANCH_NAME"
+            git checkout "$BRANCH_NAME"
+            git merge --strategy=ours origin/dev -m "Merge latest dev changes"
+          else
+            echo "Creating new branch $BRANCH_NAME"
+            git checkout -b "$BRANCH_NAME"
+          fi
+
+      - name: Update Dockerfile with new Alpine version
+        run: |
+          CURRENT_VERSION="${{ needs.check-alpine-version.outputs.current_version }}"
+          LATEST_VERSION="${{ needs.check-alpine-version.outputs.latest_version }}"
+          CURRENT_MINOR=$(echo $CURRENT_VERSION | cut -d. -f1,2 | tr '.' '_')
+          LATEST_MINOR="${{ needs.check-alpine-version.outputs.alpine_minor }}"
+
+          echo "Updating Alpine from $CURRENT_VERSION to $LATEST_VERSION"
+          echo "Updating package references from alpine_$CURRENT_MINOR to alpine_$LATEST_MINOR"
+
+          # Update Alpine base image version
+          sed -i "s|alpine:$CURRENT_VERSION|alpine:$LATEST_VERSION|g" Dockerfile
+
+          # Update renovate comments with new Alpine minor version
+          sed -i "s|alpine_$CURRENT_MINOR/|alpine_$LATEST_MINOR/|g" Dockerfile
+
+          # Show changes
+          git diff Dockerfile
+
+      - name: Commit changes
+        id: commit
+        run: |
+          if git diff --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes to commit"
+          else
+            CURRENT_VERSION="${{ needs.check-alpine-version.outputs.current_version }}"
+            LATEST_VERSION="${{ needs.check-alpine-version.outputs.latest_version }}"
+            CURRENT_MINOR=$(echo $CURRENT_VERSION | cut -d. -f1,2 | tr '.' '_')
+            LATEST_MINOR="${{ needs.check-alpine-version.outputs.alpine_minor }}"
+
+            git add Dockerfile
+            git commit -m "Update Alpine base image to ${LATEST_VERSION}" \
+              -m "" \
+              -m "This automated update includes:" \
+              -m "- Alpine base image: ${CURRENT_VERSION} → ${LATEST_VERSION}" \
+              -m "- Package repository: alpine_${CURRENT_MINOR} → alpine_${LATEST_MINOR}" \
+              -m "" \
+              -m "Alpine packages will be updated by Renovate bot after merge."
+
+            git push -f origin "${{ steps.create_branch.outputs.branch_name }}"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.commit.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH_NAME="${{ steps.create_branch.outputs.branch_name }}"
+          CURRENT_VERSION="${{ needs.check-alpine-version.outputs.current_version }}"
+          LATEST_VERSION="${{ needs.check-alpine-version.outputs.latest_version }}"
+          ALPINE_MINOR="${{ needs.check-alpine-version.outputs.alpine_minor }}"
+
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" \
+            --base dev --json number --jq '.[0].number')
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR #$EXISTING_PR already exists for this branch"
+          else
+            # Create PR with detailed description
+            cat > /tmp/pr_body.md << 'EOF'
+          ## Alpine Base Image Update
+
+          This automated PR updates the Alpine Linux base image from
+          **$CURRENT_VERSION** to **$LATEST_VERSION**.
+
+          ### Changes Included
+
+          - ✅ Alpine base image updated in Dockerfile
+          - ✅ Package repository references updated to `alpine_$ALPINE_MINOR`
+          - ⏳ Alpine packages will be updated by Renovate bot after merge
+
+          ### Testing Required
+
+          This PR will automatically run the following tests:
+          - Docker image build test
+          - Multi-architecture build test
+          - Container functionality test
+          - Trivy security scan
+          - Anchore security scan
+
+          ### Manual Review Required
+
+          ⚠️ **This PR requires manual review before merging** to ensure:
+          1. All tests pass successfully
+          2. No breaking changes in the new Alpine version
+          3. Security scan results are acceptable
+          4. Package compatibility is verified
+
+          After merging, Renovate bot will automatically create follow-up PRs
+          to update individual Alpine packages to versions compatible with
+          Alpine $ALPINE_MINOR.
+
+          ---
+          🤖 This PR was created automatically by the `update-alpine.yml` workflow.
+          EOF
+
+            # Substitute variables
+            sed -i "s|\$CURRENT_VERSION|$CURRENT_VERSION|g" /tmp/pr_body.md
+            sed -i "s|\$LATEST_VERSION|$LATEST_VERSION|g" /tmp/pr_body.md
+            sed -i "s|\$ALPINE_MINOR|$ALPINE_MINOR|g" /tmp/pr_body.md
+
+            gh pr create \
+              --base dev \
+              --head "$BRANCH_NAME" \
+              --title "Update Alpine base image to $LATEST_VERSION" \
+              --body-file /tmp/pr_body.md
+          fi
