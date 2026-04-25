@@ -42,7 +42,7 @@ jobs:
           docker compose --file docker-compose.test.yml up --exit-code-from sut -t 10 --build
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
