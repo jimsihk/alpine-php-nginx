@@ -197,7 +197,7 @@ jobs:
           git checkout -b "${BRANCH}"
           git add Dockerfile
           git diff --staged  # log changes for workflow debugging
-          git commit -m "chore: update alpine base image to ${NEW_VERSION}"
+          git commit -m "Update alpine base image to ${NEW_VERSION}"
           git push origin "${BRANCH}"
 
       - name: Create pull request for review
