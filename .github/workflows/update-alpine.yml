@@ -23,11 +23,19 @@ jobs:
         with:
           egress-policy: audit
 
+      - name: Generate release token
+        id: generate_release_token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.RELEASE_BOT_APP_ID }}
+          private_key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+
       - name: Checkout default branch
         uses: actions/checkout@v6
         with:
           ref: ${{ env.DEFAULT_BRANCH }}
           fetch-depth: 0
+          token: ${{ steps.generate_release_token.outputs.token }}
 
       - name: Get current Alpine version from Dockerfile
         id: current
@@ -83,7 +91,7 @@ jobs:
         if: steps.check.outputs.needed == 'true'
         id: existing
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.generate_release_token.outputs.token }}
         run: |
           NEW_VERSION=${{ steps.latest.outputs.version }}
           BRANCH="${{ env.UPDATE_BRANCH_PREFIX }}-${NEW_VERSION}"
@@ -203,7 +211,7 @@ jobs:
       - name: Create pull request for review
         if: steps.check.outputs.needed == 'true' && steps.existing.outputs.exists == 'false'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.generate_release_token.outputs.token }}
         run: |
           NEW_VERSION=${{ steps.latest.outputs.version }}
           CURR_VERSION=${{ steps.current.outputs.version }}
