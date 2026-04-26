@@ -1,5 +1,5 @@
 ARG ARCH=
-FROM ${ARCH}alpine:3.22.2 AS build
+FROM ${ARCH}alpine:3.23.4 AS build
 
 ARG GNU_LIBICONV_VERSION="=1.15-r3"
 
@@ -9,7 +9,7 @@ RUN apk --no-cache add \
       --repository http://dl-cdn.alpinelinux.org/alpine/v3.13/community/ \
         gnu-libiconv${GNU_LIBICONV_VERSION}
 
-FROM ${ARCH}alpine:3.22.2
+FROM ${ARCH}alpine:3.23.4
 
 LABEL org.opencontainers.image.title="alpine-php-nginx" \
       org.opencontainers.image.description="Lightweight container with NGINX & PHP-FPM based on Alpine Linux." \
@@ -20,23 +20,23 @@ LABEL org.opencontainers.image.title="alpine-php-nginx" \
 ARG PHP_V=84
 ENV PHP_RUNTIME=php${PHP_V}
 ENV PHP_FPM_RUNTIME=php-fpm${PHP_V}
-# renovate: datasource=repology depName=alpine_3_22/php84 versioning=loose
-ENV PHP_VERSION="=8.4.16-r0"
-# renovate: datasource=repology depName=alpine_3_22/php84-pecl-apcu versioning=loose
-ARG PHP_PECL_APCU_VERSION="=5.1.27-r0"
-# renovate: datasource=repology depName=alpine_3_22/php84-pecl-memcached versioning=loose
-ARG PHP_PECL_MEMCACHED_VERSION="=3.3.0-r0"
-# renovate: datasource=repology depName=alpine_3_22/php84-pecl-redis versioning=loose
+# renovate: datasource=repology depName=alpine_3_23/php84 versioning=loose
+ENV PHP_VERSION="=8.4.20-r1"
+# renovate: datasource=repology depName=alpine_3_23/php84-pecl-apcu versioning=loose
+ARG PHP_PECL_APCU_VERSION="=5.1.28-r0"
+# renovate: datasource=repology depName=alpine_3_23/php84-pecl-memcached versioning=loose
+ARG PHP_PECL_MEMCACHED_VERSION="=3.4.0-r0"
+# renovate: datasource=repology depName=alpine_3_23/php84-pecl-redis versioning=loose
 ARG PHP_PECL_REDIS_VERSION="=6.3.0-r0"
-# renovate: datasource=repology depName=alpine_3_22/nginx versioning=loose
+# renovate: datasource=repology depName=alpine_3_23/nginx versioning=loose
 ARG NGINX_VERSION="=1.28.3-r0"
-# renovate: datasource=repology depName=alpine_3_22/runit versioning=loose
-ARG RUNIT_VERSION="=2.2.0-r1"
-# renovate: datasource=repology depName=alpine_3_22/curl versioning=loose
-ARG CURL_VERSION="=8.14.1-r2"
-# renovate: datasource=repology depName=alpine_3_22/gettext versioning=loose
-ARG GETTEXT_VERSION="=0.24.1-r0"
-# renovate: datasource=repology depName=alpine_3_22/libssl3 versioning=loose
+# renovate: datasource=repology depName=alpine_3_23/runit versioning=loose
+ARG RUNIT_VERSION="=2.3.0-r0"
+# renovate: datasource=repology depName=alpine_3_23/curl versioning=loose
+ARG CURL_VERSION="=8.17.0-r1"
+# renovate: datasource=repology depName=alpine_3_23/gettext versioning=loose
+ARG GETTEXT_VERSION="=0.24.1-r1"
+# renovate: datasource=repology depName=alpine_3_23/libssl3 versioning=loose
 ARG LIBSSL3_VERSION="=3.5.6-r0"
 
 # Install packages
