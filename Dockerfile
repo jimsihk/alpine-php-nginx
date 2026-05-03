@@ -7,16 +7,17 @@ ARG LIBICONV_VERSION
 ARG LIBICONV_SHA256
 
 # GNU libiconv's `make install` does not install `preloadable_libiconv.so`,
-# so we build that target explicitly and copy the shim into /usr/local/lib.
+# so we build that target explicitly and copy the shim into the same
+# /usr/local/lib prefix that the runtime stage later copies from.
 RUN apk add --no-cache \
         build-base \
         ca-certificates \
         curl \
     && mkdir -p /usr/src/libiconv \
     && if ! curl -fsSL --retry 5 --retry-all-errors https://ftpmirror.gnu.org/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz; then \
-           echo "Download failed from ftpmirror.gnu.org, retrying mirrors.kernel.org" >&2; \
+           echo "Download failed from ftpmirror.gnu.org, retrying the fallback mirror" >&2; \
            curl -fsSL --retry 5 --retry-all-errors https://mirrors.kernel.org/gnu/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz \
-           || (echo "Download also failed from mirrors.kernel.org" >&2 && exit 1); \
+           || (echo "Download also failed from the fallback mirror" >&2 && exit 1); \
        fi \
     && echo "${LIBICONV_SHA256}  /tmp/libiconv.tar.gz" | sha256sum -c - \
     && tar -xzf /tmp/libiconv.tar.gz --strip-components=1 -C /usr/src/libiconv \
