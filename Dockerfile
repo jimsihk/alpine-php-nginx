@@ -25,7 +25,7 @@ RUN apt-get update \
     && make install \
     && rm -f /tmp/libiconv.tar.gz \
     && [ -f /usr/local/lib/preloadable_libiconv.so ] \
-        || (echo "Error: preloadable_libiconv.so not found after libiconv build" >&2 && exit 1)
+        || (echo "Error: preloadable_libiconv.so not found at /usr/local/lib/ after libiconv build" >&2 && exit 1)
 
 FROM ${ARCH}alpine:3.23.4
 
