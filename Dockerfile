@@ -2,16 +2,14 @@ ARG ARCH=
 ARG LIBICONV_VERSION=1.17
 ARG LIBICONV_SHA256=8f74213b56238c85a50a5329f77e06198771e70dd9a739779f4c02f65d971313
 
-FROM debian:bookworm-slim AS build
+FROM ${ARCH}alpine:3.23.4 AS build
 ARG LIBICONV_VERSION
 ARG LIBICONV_SHA256
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        build-essential \
+RUN apk add --no-cache \
+        build-base \
         ca-certificates \
         curl \
-    && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /usr/src/libiconv \
     && if ! curl -fsSL --retry 5 --retry-all-errors https://ftpmirror.gnu.org/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz; then \
            echo "Download failed from ftpmirror.gnu.org, retrying mirrors.kernel.org" >&2; \
@@ -26,9 +24,7 @@ RUN apt-get update \
     && make preloadable \
     && make install \
     && install -m 0755 /usr/src/libiconv/preloadable/preloadable_libiconv.so /usr/local/lib/preloadable_libiconv.so \
-    && rm -f /tmp/libiconv.tar.gz \
-    && [ -f /usr/local/lib/preloadable_libiconv.so ] \
-        || (echo "Error: make preloadable did not produce /usr/src/libiconv/preloadable/preloadable_libiconv.so for installation to /usr/local/lib/preloadable_libiconv.so" >&2 && exit 1)
+    && rm -f /tmp/libiconv.tar.gz
 
 FROM ${ARCH}alpine:3.23.4
 
