@@ -1,72 +1,99 @@
 #!/bin/sh
 
+set -eu
+
 shutdown() {
+  _status="${1:-0}"
   echo "shutting down container"
 
-  # first shutdown any service started by runit
-  for _srv in /etc/service/*; do
-    [ -e "$_srv" ] || break
-    sv force-stop "$(basename "$_srv")"
-  done
+  if [ -n "${NGINX_PID:-}" ]; then
+    kill "$NGINX_PID" 2>/dev/null || true
+  fi
 
-  # shutdown runsvdir command
-  kill -HUP $RUNSVDIR
-  wait $RUNSVDIR
+  if [ -n "${PHP_FPM_PID:-}" ]; then
+    kill "$PHP_FPM_PID" 2>/dev/null || true
+  fi
 
-  # give processes time to stop
-  sleep 0.5
-
-  # kill any other processes still running in the container
-  for _pid  in $(ps -eo pid | grep -v PID  | tr -d ' ' | grep -v '^1$' | head -n -6); do
-    timeout 5 /bin/sh -c "kill $_pid && wait $_pid || kill -9 $_pid"
-  done
-  exit
+  wait "${NGINX_PID:-}" 2>/dev/null || true
+  wait "${PHP_FPM_PID:-}" 2>/dev/null || true
+  exit "$_status"
 }
 
-# Replace ENV vars in configuration files
+render_template() {
+  _config_file="$1"
+
+  php -n /dev/stdin "$_config_file" <<'PHP'
+<?php
+$file = $argv[1];
+$contents = file_get_contents($file);
+
+if ($contents === false) {
+    fwrite(STDERR, "Failed to read $file\n");
+    exit(1);
+}
+
+$environment = getenv();
+$names = array_keys($environment);
+usort($names, static fn($left, $right) => strlen($right) <=> strlen($left));
+
+if ($names !== []) {
+    $escapedNames = array_map(static fn($name) => preg_quote($name, '/'), $names);
+    $pattern = '/\$\{(' . implode('|', $escapedNames) . ')(?::-([^}]*))?\}|\$(' . implode('|', $escapedNames) . ')\b/';
+    $contents = preg_replace_callback(
+        $pattern,
+        static function (array $matches) use ($environment): string {
+            $name = $matches[1] !== '' ? $matches[1] : $matches[3];
+            $value = $environment[$name] ?? '';
+
+            if ($matches[1] !== '' && array_key_exists(2, $matches) && $matches[2] !== '' && $value === '') {
+                return $matches[2];
+            }
+
+            return $value;
+        },
+        $contents
+    );
+}
+
+if (file_put_contents($file, $contents) === false) {
+    fwrite(STDERR, "Failed to write $file\n");
+    exit(1);
+}
+PHP
+}
+
 for _configini in $envsubst_config_list; do
-  if [ -f "$_configini" ]
-  then
+  if [ -f "$_configini" ]; then
     echo "Setting up $_configini..."
-    tmpfile=$(mktemp)
-    envsubst "$(env | cut -d= -f1 | sed -e 's/^/$/')" < "$_configini" > "$tmpfile"
-    mv "$tmpfile" "$_configini"
+    render_template "$_configini"
   fi
 done
 
 echo "Starting startup scripts in /docker-entrypoint-init.d ..."
-for script in $(find /docker-entrypoint-init.d/ -executable -type f | sort); do
-    echo >&2 "*** Running: $script"
-    $script
-    retval=$?
-    if [ $retval != 0 ];
-    then
-        echo >&2 "*** Failed with return value: $retval"
-        exit $retval
-    fi
+find /docker-entrypoint-init.d/ -type f -perm -111 | sort | while read -r script; do
+  echo >&2 "*** Running: $script"
+  "$script"
 done
 echo "Finished startup scripts in /docker-entrypoint-init.d"
 
-echo "Starting runit..."
-exec runsvdir -P /etc/service &
-
-RUNSVDIR=$!
-echo "Started runsvdir, PID is $RUNSVDIR"
-echo "wait for processes to start...."
-
-sleep 5
-for _srv in /etc/service/*; do
-  [ -e "$_srv" ] || break
-  sv status "$(basename "$_srv")"
-done
-
-# If there are additional arguments, execute them
 if [ $# -gt 0 ]; then
-    exec "$@"
+  exec "$@"
 fi
 
-# catch shutdown signals
-trap shutdown SIGTERM SIGHUP SIGQUIT SIGINT
-wait $RUNSVDIR
+trap 'shutdown 0' SIGTERM SIGHUP SIGQUIT SIGINT
 
-shutdown
+php-fpm -F &
+PHP_FPM_PID=$!
+
+nginx -g 'daemon off;' &
+NGINX_PID=$!
+
+while kill -0 "$PHP_FPM_PID" 2>/dev/null && kill -0 "$NGINX_PID" 2>/dev/null; do
+  sleep 1
+done
+
+status=0
+wait "$PHP_FPM_PID" || status=$?
+wait "$NGINX_PID" || [ "$status" -ne 0 ] || status=$?
+
+shutdown "$status"

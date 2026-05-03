@@ -1,36 +1,4 @@
-ARG ARCH=
-ARG LIBICONV_VERSION=1.17
-ARG LIBICONV_SHA256=8f74213b56238c85a50a5329f77e06198771e70dd9a739779f4c02f65d971313
-
-FROM ${ARCH}alpine:3.23.4 AS build
-ARG LIBICONV_VERSION
-ARG LIBICONV_SHA256
-
-# GNU libiconv's `make install` does not install `preloadable_libiconv.so`,
-# so we build that target explicitly and copy the shim into the same
-# /usr/local/lib prefix that the runtime stage later copies from.
-RUN apk add --no-cache \
-        build-base \
-        ca-certificates \
-        curl \
-    && mkdir -p /usr/src/libiconv \
-    && if ! curl -fsSL --retry 5 --retry-all-errors https://ftpmirror.gnu.org/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz; then \
-           echo "Download failed from ftpmirror.gnu.org, retrying the fallback mirror" >&2; \
-           curl -fsSL --retry 5 --retry-all-errors https://mirrors.kernel.org/gnu/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz \
-           || (echo "Download also failed from the fallback mirror" >&2 && exit 1); \
-       fi \
-    && echo "${LIBICONV_SHA256}  /tmp/libiconv.tar.gz" | sha256sum -c - \
-    && tar -xzf /tmp/libiconv.tar.gz --strip-components=1 -C /usr/src/libiconv \
-    && cd /usr/src/libiconv \
-    && ./configure --prefix=/usr/local \
-    && make -j"$(nproc)" \
-    && make preloadable \
-    && make install \
-    && install -m 0755 /usr/src/libiconv/preloadable/preloadable_libiconv.so /usr/local/lib/preloadable_libiconv.so \
-    && rm -f /tmp/libiconv.tar.gz \
-    && rm -rf /usr/src/libiconv
-
-FROM ${ARCH}alpine:3.23.4
+FROM webdevops/php-nginx:8.4-alpine@sha256:a829a1110690b12dfa4d73ad23e35af52f18135a1c3d5292c5bf063c0e729818
 
 LABEL org.opencontainers.image.title="alpine-php-nginx" \
       org.opencontainers.image.description="Lightweight container with NGINX & PHP-FPM based on Alpine Linux." \
@@ -38,105 +6,37 @@ LABEL org.opencontainers.image.title="alpine-php-nginx" \
       org.opencontainers.image.source="https://github.com/jimsihk/alpine-php-nginx" \
       org.opencontainers.image.documentation="https://github.com/jimsihk/alpine-php-nginx"
 
-ARG PHP_V=84
-ENV PHP_RUNTIME=php${PHP_V}
-ENV PHP_FPM_RUNTIME=php-fpm${PHP_V}
-# renovate: datasource=repology depName=alpine_3_23/php84 versioning=loose
-ENV PHP_VERSION="=8.4.20-r1"
-# renovate: datasource=repology depName=alpine_3_23/php84-pecl-apcu versioning=loose
-ARG PHP_PECL_APCU_VERSION="=5.1.28-r0"
-# renovate: datasource=repology depName=alpine_3_23/php84-pecl-memcached versioning=loose
-ARG PHP_PECL_MEMCACHED_VERSION="=3.4.0-r0"
-# renovate: datasource=repology depName=alpine_3_23/php84-pecl-redis versioning=loose
-ARG PHP_PECL_REDIS_VERSION="=6.3.0-r0"
-# renovate: datasource=repology depName=alpine_3_23/nginx versioning=loose
-ARG NGINX_VERSION="=1.28.3-r0"
-# renovate: datasource=repology depName=alpine_3_23/runit versioning=loose
-ARG RUNIT_VERSION="=2.3.0-r0"
-# renovate: datasource=repology depName=alpine_3_23/curl versioning=loose
-ARG CURL_VERSION="=8.17.0-r1"
-# renovate: datasource=repology depName=alpine_3_23/gettext versioning=loose
-ARG GETTEXT_VERSION="=0.24.1-r1"
-# renovate: datasource=repology depName=alpine_3_23/libssl3 versioning=loose
-ARG LIBSSL3_VERSION="=3.5.6-r0"
+RUN mkdir -p \
+        /docker-entrypoint-init.d \
+        /etc/nginx/conf.d/default/server \
+        /var/www/html \
+    && rm -f \
+        /etc/nginx/conf.d/10-docker.conf \
+        /etc/nginx/http.d/default.conf \
+        /usr/local/etc/php-fpm.d/application.conf
 
-# Install packages
-RUN apk --no-cache add \
-        libssl3${LIBSSL3_VERSION} \
-        ${PHP_RUNTIME}${PHP_VERSION} \
-        ${PHP_RUNTIME}-fpm${PHP_VERSION} \
-        ${PHP_RUNTIME}-opcache${PHP_VERSION} \
-        ${PHP_RUNTIME}-pecl-apcu${PHP_PECL_APCU_VERSION} \
-        ${PHP_RUNTIME}-pecl-memcached${PHP_PECL_MEMCACHED_VERSION} \
-        ${PHP_RUNTIME}-pecl-redis${PHP_PECL_REDIS_VERSION} \
-        ${PHP_RUNTIME}-mysqli${PHP_VERSION} \
-        ${PHP_RUNTIME}-pgsql${PHP_VERSION} \
-        ${PHP_RUNTIME}-openssl${PHP_VERSION} \
-        ${PHP_RUNTIME}-curl${PHP_VERSION} \
-        # ${PHP_RUNTIME}-zlib \
-        ${PHP_RUNTIME}-soap${PHP_VERSION} \
-        ${PHP_RUNTIME}-xml${PHP_VERSION} \
-        ${PHP_RUNTIME}-fileinfo${PHP_VERSION} \
-        ${PHP_RUNTIME}-phar${PHP_VERSION} \
-        ${PHP_RUNTIME}-intl${PHP_VERSION} \
-        ${PHP_RUNTIME}-dom${PHP_VERSION} \
-        ${PHP_RUNTIME}-xmlreader${PHP_VERSION} \
-        ${PHP_RUNTIME}-ctype${PHP_VERSION} \
-        ${PHP_RUNTIME}-session${PHP_VERSION} \
-        ${PHP_RUNTIME}-iconv${PHP_VERSION} \
-        ${PHP_RUNTIME}-tokenizer${PHP_VERSION} \
-        ${PHP_RUNTIME}-zip${PHP_VERSION} \
-        ${PHP_RUNTIME}-simplexml${PHP_VERSION} \
-        ${PHP_RUNTIME}-mbstring${PHP_VERSION} \
-        ${PHP_RUNTIME}-gd${PHP_VERSION} \
-        ${PHP_RUNTIME}-sodium${PHP_VERSION} \
-        ${PHP_RUNTIME}-exif${PHP_VERSION} \
-        nginx${NGINX_VERSION} \
-        runit${RUNIT_VERSION} \
-        curl${CURL_VERSION} \
-        # ${PHP_RUNTIME}-pdo \
-        # ${PHP_RUNTIME}-pdo_pgsql \
-        # ${PHP_RUNTIME}-pdo_mysql \
-        # ${PHP_RUNTIME}-pdo_sqlite \
-        # ${PHP_RUNTIME}-bz2 \
-# Create symlink so programs depending on `php` and `php-fpm` still function
-    && if [ ! -L /usr/bin/php ]; then ln -s /usr/bin/${PHP_RUNTIME} /usr/bin/php; fi \
-    && if [ -d /etc/${PHP_RUNTIME} ]; then mv /etc/${PHP_RUNTIME} /etc/php && ln -s /etc/php /etc/${PHP_RUNTIME}; fi \
-    && if [ ! -L /usr/sbin/php-fpm ]; then ln -s /usr/sbin/${PHP_FPM_RUNTIME} /usr/sbin/php-fpm; fi \
-# Bring in gettext so we can get `envsubst`, then throw
-# the rest away. To do this, we need to install `gettext`
-# then move `envsubst` out of the way so `gettext` can
-# be deleted completely, then move `envsubst` back.
-    && apk add --no-cache --virtual .gettext gettext${GETTEXT_VERSION} \
-    && mv /usr/bin/envsubst /tmp/ \
-    && runDeps="$( \
-        scanelf --needed --nobanner /tmp/envsubst \
-            | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
-            | sort -u \
-            | xargs -r apk info --installed \
-            | sort -u \
-    )" \
-    && apk add --no-cache $runDeps \
-    && apk del .gettext \
-    && mv /tmp/envsubst /usr/local/bin/ \
-# Remove alpine cache
-    && rm -rf /var/cache/apk/* \
-# Remove default server definition
-    && rm /etc/nginx/http.d/default.conf \
-# Make sure files/folders needed by the processes are accessible when they run under the nobody user
-    && chown -R nobody:nobody /run /var/lib/nginx /var/log/nginx
+COPY --chown=nobody rootfs/bin/docker-entrypoint.sh /bin/docker-entrypoint.sh
+COPY --chown=nobody rootfs/docker-entrypoint-init.d/ /docker-entrypoint-init.d/
+COPY --chown=nobody rootfs/etc/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY --chown=nobody rootfs/etc/nginx/conf.d/security.conf /etc/nginx/conf.d/security.conf
+COPY --chown=nobody rootfs/etc/php/conf.d/custom.ini /usr/local/etc/php/conf.d/custom.ini
+COPY --chown=nobody rootfs/etc/php/conf.d/custom-opcache-jit.ini /usr/local/etc/php/conf.d/custom-opcache-jit.ini
+COPY --chown=nobody rootfs/etc/php/php-fpm.d/www.conf /usr/local/etc/php-fpm.d/www.conf
+COPY --chown=nobody rootfs/var/www/html/ /var/www/html/
 
-# Add GNU libiconv preload library built on musl for iconv transliteration support
-COPY --from=build /usr/local/lib/preloadable_libiconv.so /usr/lib/preloadable_libiconv.so
-ENV LD_PRELOAD=/usr/lib/preloadable_libiconv.so
+RUN chmod +x /bin/docker-entrypoint.sh /docker-entrypoint-init.d/* \
+    && chown -R nobody:nobody \
+        /docker-entrypoint-init.d \
+        /etc/nginx \
+        /run \
+        /usr/local/etc/php \
+        /usr/local/etc/php-fpm.d \
+        /var/lib/nginx \
+        /var/log/nginx \
+        /var/www/html
 
-# Add configuration files
-COPY --chown=nobody rootfs/ /
-
-# Switch to use a non-root user from here on
 USER nobody
 
-# Add application
 WORKDIR /var/www/html
 
 ENV nginx_root_directory=/var/www/html \
@@ -161,18 +61,13 @@ ENV nginx_root_directory=/var/www/html \
     opcache_max_accelerated_files=15000 \
     custom_router=''
 
-# List of config files that will be updated with environment variables using envsubst
 ENV envsubst_config_list="/etc/nginx/nginx.conf \
-                          /etc/php/conf.d/custom.ini \
-                          /etc/php/conf.d/custom-opcache-jit.ini \
-                          /etc/php/php-fpm.d/www.conf"
+                          /usr/local/etc/php/conf.d/custom.ini \
+                          /usr/local/etc/php/conf.d/custom-opcache-jit.ini \
+                          /usr/local/etc/php-fpm.d/www.conf"
 
-# Expose the port nginx is reachable on
 EXPOSE 8080
 
-# Let runit start nginx & php-fpm
-# Ensure /bin/docker-entrypoint.sh is always executed
 ENTRYPOINT [ "/bin/docker-entrypoint.sh" ]
 
-# Configure a healthcheck to validate that everything is up&running
 HEALTHCHECK --timeout=10s CMD curl --silent --fail http://127.0.0.1:8080/fpm-ping || exit 1
