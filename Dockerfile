@@ -13,8 +13,9 @@ RUN apt-get update \
         curl \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /usr/src/libiconv \
-    && (curl -fsSL --retry 5 --retry-all-errors https://ftpmirror.gnu.org/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz \
-        || curl -fsSL --retry 5 --retry-all-errors https://mirrors.kernel.org/gnu/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz) \
+    && curl -fsSL --retry 5 --retry-all-errors https://ftpmirror.gnu.org/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz \
+        || { echo "Primary libiconv mirror download failed, retrying kernel mirror" >&2; \
+             curl -fsSL --retry 5 --retry-all-errors https://mirrors.kernel.org/gnu/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz; } \
     && echo "${LIBICONV_SHA256}  /tmp/libiconv.tar.gz" | sha256sum -c - \
     && tar -xzf /tmp/libiconv.tar.gz --strip-components=1 -C /usr/src/libiconv \
     && cd /usr/src/libiconv \
@@ -22,7 +23,8 @@ RUN apt-get update \
     && make -j"$(nproc)" \
     && make install \
     && rm -f /tmp/libiconv.tar.gz \
-    && test -f /usr/local/lib/preloadable_libiconv.so
+    && [ -f /usr/local/lib/preloadable_libiconv.so ] \
+        || (echo "Error: preloadable_libiconv.so not found after libiconv build" >&2 && exit 1)
 
 FROM ${ARCH}alpine:3.23.4
 
