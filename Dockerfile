@@ -14,9 +14,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /usr/src/libiconv \
     && if ! curl -fsSL --retry 5 --retry-all-errors https://ftpmirror.gnu.org/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz; then \
-           echo "Primary libiconv mirror download failed, retrying kernel mirror" >&2; \
+           echo "Download failed from ftpmirror.gnu.org, retrying mirrors.kernel.org" >&2; \
            curl -fsSL --retry 5 --retry-all-errors https://mirrors.kernel.org/gnu/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz \
-           || (echo "Both libiconv source mirrors failed" >&2 && exit 1); \
+           || (echo "Download also failed from mirrors.kernel.org" >&2 && exit 1); \
        fi \
     && echo "${LIBICONV_SHA256}  /tmp/libiconv.tar.gz" | sha256sum -c - \
     && tar -xzf /tmp/libiconv.tar.gz --strip-components=1 -C /usr/src/libiconv \
