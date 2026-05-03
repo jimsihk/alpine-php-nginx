@@ -26,7 +26,8 @@ RUN apk add --no-cache \
     && make preloadable \
     && make install \
     && install -m 0755 /usr/src/libiconv/preloadable/preloadable_libiconv.so /usr/local/lib/preloadable_libiconv.so \
-    && rm -f /tmp/libiconv.tar.gz
+    && rm -f /tmp/libiconv.tar.gz \
+    && rm -rf /usr/src/libiconv
 
 FROM ${ARCH}alpine:3.23.4
 
