@@ -13,8 +13,8 @@ RUN apt-get update \
         curl \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /usr/src/libiconv \
-    && curl -fsSL --retry 5 --retry-all-errors https://ftpmirror.gnu.org/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz \
-        || curl -fsSL --retry 5 --retry-all-errors https://mirrors.kernel.org/gnu/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz \
+    && (curl -fsSL --retry 5 --retry-all-errors https://ftpmirror.gnu.org/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz \
+        || curl -fsSL --retry 5 --retry-all-errors https://mirrors.kernel.org/gnu/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz) \
     && echo "${LIBICONV_SHA256}  /tmp/libiconv.tar.gz" | sha256sum -c - \
     && tar -xzf /tmp/libiconv.tar.gz --strip-components=1 -C /usr/src/libiconv \
     && cd /usr/src/libiconv \
@@ -122,6 +122,7 @@ RUN apk --no-cache add \
 
 # Add GNU libiconv preload library built on glibc for iconv transliteration support
 COPY --from=build /usr/local/lib/preloadable_libiconv.so /usr/lib/preloadable_libiconv.so
+ENV LD_PRELOAD=/usr/lib/preloadable_libiconv.so
 
 # Add configuration files
 COPY --chown=nobody rootfs/ /
@@ -131,8 +132,6 @@ USER nobody
 
 # Add application
 WORKDIR /var/www/html
-
-ENV LD_PRELOAD=/usr/lib/preloadable_libiconv.so
 
 ENV nginx_root_directory=/var/www/html \
     client_max_body_size=2M \
