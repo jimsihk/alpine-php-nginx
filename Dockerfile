@@ -2,7 +2,7 @@ ARG ARCH=
 ARG LIBICONV_VERSION=1.17
 ARG LIBICONV_SHA256=8f74213b56238c85a50a5329f77e06198771e70dd9a739779f4c02f65d971313
 
-FROM debian:bookworm-slim AS libiconv-build
+FROM debian:bookworm-slim AS build
 ARG LIBICONV_VERSION
 ARG LIBICONV_SHA256
 
@@ -23,6 +23,7 @@ RUN apt-get update \
     && ./configure --prefix=/usr/local \
     && make -j"$(nproc)" \
     && make install \
+    && install -m 0755 preloadable/preloadable_libiconv.so /usr/local/lib/preloadable_libiconv.so \
     && rm -f /tmp/libiconv.tar.gz \
     && [ -f /usr/local/lib/preloadable_libiconv.so ] \
         || (echo "Error: preloadable_libiconv.so not found at /usr/local/lib/ after libiconv build" >&2 && exit 1)
@@ -124,7 +125,7 @@ RUN apk --no-cache add \
     && chown -R nobody:nobody /run /var/lib/nginx /var/log/nginx
 
 # Add GNU libiconv preload library built on glibc for iconv transliteration support
-COPY --from=libiconv-build /usr/local/lib/preloadable_libiconv.so /usr/lib/preloadable_libiconv.so
+COPY --from=build /usr/local/lib/preloadable_libiconv.so /usr/lib/preloadable_libiconv.so
 ENV LD_PRELOAD=/usr/lib/preloadable_libiconv.so
 
 # Add configuration files
