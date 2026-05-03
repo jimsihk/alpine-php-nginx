@@ -17,7 +17,8 @@ RUN apk --no-cache add build-base wget \
     && ./configure --prefix=/usr/local \
     && make \
     && make install \
-    && rm -rf /tmp/libiconv*
+    && rm -rf /tmp/libiconv* \
+    && apk del build-base wget
 
 FROM ${ARCH}alpine:3.23.4
 
