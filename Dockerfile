@@ -122,7 +122,7 @@ RUN apk --no-cache add \
 # Make sure files/folders needed by the processes are accessible when they run under the nobody user
     && chown -R nobody:nobody /run /var/lib/nginx /var/log/nginx
 
-# Add GNU libiconv preload library built on glibc for iconv transliteration support
+# Add GNU libiconv preload library built on musl for iconv transliteration support
 COPY --from=build /usr/local/lib/preloadable_libiconv.so /usr/lib/preloadable_libiconv.so
 ENV LD_PRELOAD=/usr/lib/preloadable_libiconv.so
 
