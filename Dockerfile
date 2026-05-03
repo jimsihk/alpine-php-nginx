@@ -28,7 +28,7 @@ RUN apt-get update \
     && install -m 0755 /usr/src/libiconv/preloadable/preloadable_libiconv.so /usr/local/lib/preloadable_libiconv.so \
     && rm -f /tmp/libiconv.tar.gz \
     && [ -f /usr/local/lib/preloadable_libiconv.so ] \
-        || (echo "Error: preloadable_libiconv.so not found at /usr/local/lib/ after libiconv build" >&2 && exit 1)
+        || (echo "Error: make preloadable did not produce /usr/src/libiconv/preloadable/preloadable_libiconv.so for installation to /usr/local/lib/preloadable_libiconv.so" >&2 && exit 1)
 
 FROM ${ARCH}alpine:3.23.4
 
