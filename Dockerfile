@@ -15,7 +15,8 @@ RUN apt-get update \
     && mkdir -p /usr/src/libiconv \
     && if ! curl -fsSL --retry 5 --retry-all-errors https://ftpmirror.gnu.org/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz; then \
            echo "Primary libiconv mirror download failed, retrying kernel mirror" >&2; \
-           curl -fsSL --retry 5 --retry-all-errors https://mirrors.kernel.org/gnu/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz; \
+           curl -fsSL --retry 5 --retry-all-errors https://mirrors.kernel.org/gnu/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz \
+           || (echo "Both libiconv source mirrors failed" >&2 && exit 1); \
        fi \
     && echo "${LIBICONV_SHA256}  /tmp/libiconv.tar.gz" | sha256sum -c - \
     && tar -xzf /tmp/libiconv.tar.gz --strip-components=1 -C /usr/src/libiconv \
@@ -23,7 +24,7 @@ RUN apt-get update \
     && ./configure --prefix=/usr/local \
     && make -j"$(nproc)" \
     && make install \
-    && install -m 0755 preloadable/preloadable_libiconv.so /usr/local/lib/preloadable_libiconv.so \
+    && install -m 0755 /usr/src/libiconv/preloadable/preloadable_libiconv.so /usr/local/lib/preloadable_libiconv.so \
     && rm -f /tmp/libiconv.tar.gz \
     && [ -f /usr/local/lib/preloadable_libiconv.so ] \
         || (echo "Error: preloadable_libiconv.so not found at /usr/local/lib/ after libiconv build" >&2 && exit 1)
