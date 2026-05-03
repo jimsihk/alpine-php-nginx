@@ -23,6 +23,7 @@ RUN apt-get update \
     && cd /usr/src/libiconv \
     && ./configure --prefix=/usr/local \
     && make -j"$(nproc)" \
+    && make preloadable \
     && make install \
     && install -m 0755 /usr/src/libiconv/preloadable/preloadable_libiconv.so /usr/local/lib/preloadable_libiconv.so \
     && rm -f /tmp/libiconv.tar.gz \
