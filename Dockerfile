@@ -1,13 +1,23 @@
 ARG ARCH=
 FROM ${ARCH}alpine:3.23.4 AS build
 
-ARG GNU_LIBICONV_VERSION="=1.15-r3"
-
-RUN apk --no-cache add \
-# Workaround for using gnu-iconv instead of iconv in PHP on Alpine
+# Permanent fix for PHP iconv on Alpine (musl libc does not support //TRANSLIT):
+# build GNU libiconv from source to produce preloadable_libiconv.so.
+# This replaces the outdated gnu-libiconv package from Alpine 3.13 and supports all architectures.
 # https://github.com/docker-library/php/issues/240#issuecomment-876464325
-      --repository http://dl-cdn.alpinelinux.org/alpine/v3.13/community/ \
-        gnu-libiconv${GNU_LIBICONV_VERSION}
+ARG GNU_LIBICONV_VERSION="1.17"
+ARG GNU_LIBICONV_SHA256="8f74213b56238c85a50a5329f77e06198771e70dd9a739779f4c02f65d971313"
+
+RUN apk --no-cache add build-base wget \
+    && wget -q -O /tmp/libiconv.tar.gz \
+        "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-${GNU_LIBICONV_VERSION}.tar.gz" \
+    && echo "${GNU_LIBICONV_SHA256}  /tmp/libiconv.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/libiconv.tar.gz -C /tmp \
+    && cd /tmp/libiconv-${GNU_LIBICONV_VERSION} \
+    && ./configure --prefix=/usr/local \
+    && make \
+    && make install \
+    && rm -rf /tmp/libiconv*
 
 FROM ${ARCH}alpine:3.23.4
 
@@ -105,9 +115,9 @@ RUN apk --no-cache add \
 # Make sure files/folders needed by the processes are accessible when they run under the nobody user
     && chown -R nobody:nobody /run /var/lib/nginx /var/log/nginx
 
-# Workaround for using gnu-iconv instead of iconv in PHP on Alpine
+# Fix for PHP iconv on Alpine: preload GNU libiconv built from source
 # https://github.com/docker-library/php/issues/240#issuecomment-876464325
-COPY --from=build /usr/lib/preloadable_libiconv.so /usr/lib/preloadable_libiconv.so
+COPY --from=build /usr/local/lib/preloadable_libiconv.so /usr/lib/preloadable_libiconv.so
 ENV LD_PRELOAD=/usr/lib/preloadable_libiconv.so
 
 # Add configuration files
