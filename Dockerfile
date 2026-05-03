@@ -6,6 +6,8 @@ FROM ${ARCH}alpine:3.23.4 AS build
 ARG LIBICONV_VERSION
 ARG LIBICONV_SHA256
 
+# GNU libiconv's `make install` does not install `preloadable_libiconv.so`,
+# so we build that target explicitly and copy the shim into /usr/local/lib.
 RUN apk add --no-cache \
         build-base \
         ca-certificates \
