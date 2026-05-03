@@ -1,4 +1,29 @@
 ARG ARCH=
+ARG LIBICONV_VERSION=1.17
+ARG LIBICONV_SHA256=8f74213b56238c85a50a5329f77e06198771e70dd9a739779f4c02f65d971313
+
+FROM debian:bookworm-slim AS build
+ARG LIBICONV_VERSION
+ARG LIBICONV_SHA256
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /usr/src/libiconv \
+    && curl -fsSL --retry 5 --retry-all-errors https://ftpmirror.gnu.org/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz \
+        || curl -fsSL --retry 5 --retry-all-errors https://mirrors.kernel.org/gnu/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz -o /tmp/libiconv.tar.gz \
+    && echo "${LIBICONV_SHA256}  /tmp/libiconv.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/libiconv.tar.gz --strip-components=1 -C /usr/src/libiconv \
+    && cd /usr/src/libiconv \
+    && ./configure --prefix=/usr/local \
+    && make -j"$(nproc)" \
+    && make install \
+    && rm -f /tmp/libiconv.tar.gz \
+    && test -f /usr/local/lib/preloadable_libiconv.so
+
 FROM ${ARCH}alpine:3.23.4
 
 LABEL org.opencontainers.image.title="alpine-php-nginx" \
@@ -95,6 +120,9 @@ RUN apk --no-cache add \
 # Make sure files/folders needed by the processes are accessible when they run under the nobody user
     && chown -R nobody:nobody /run /var/lib/nginx /var/log/nginx
 
+# Add GNU libiconv preload library built on glibc for iconv transliteration support
+COPY --from=build /usr/local/lib/preloadable_libiconv.so /usr/lib/preloadable_libiconv.so
+
 # Add configuration files
 COPY --chown=nobody rootfs/ /
 
@@ -103,6 +131,8 @@ USER nobody
 
 # Add application
 WORKDIR /var/www/html
+
+ENV LD_PRELOAD=/usr/lib/preloadable_libiconv.so
 
 ENV nginx_root_directory=/var/www/html \
     client_max_body_size=2M \
