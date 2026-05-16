@@ -29,11 +29,11 @@ ARG PHP_PECL_MEMCACHED_VERSION="=3.4.0-r0"
 # renovate: datasource=repology depName=alpine_3_23/php84-pecl-redis versioning=loose
 ARG PHP_PECL_REDIS_VERSION="=6.3.0-r0"
 # renovate: datasource=repology depName=alpine_3_23/nginx versioning=loose
-ARG NGINX_VERSION="=1.28.3-r0"
+ARG NGINX_VERSION="=1.28.3-r1"
 # renovate: datasource=repology depName=alpine_3_23/runit versioning=loose
 ARG RUNIT_VERSION="=2.3.0-r0"
 # renovate: datasource=repology depName=alpine_3_23/curl versioning=loose
-ARG CURL_VERSION="=8.17.0-r1"
+ARG CURL_VERSION="=8.19.0-r0"
 # renovate: datasource=repology depName=alpine_3_23/gettext versioning=loose
 ARG GETTEXT_VERSION="=0.24.1-r1"
 # renovate: datasource=repology depName=alpine_3_23/libssl3 versioning=loose
