@@ -142,7 +142,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          DASHBOARD_ISSUE_NUMBER="$(gh issue list --state open --search "Dependency Dashboard in:title" --limit 1000 --json number,title --jq '.[] | select(.title|test("Dependency Dashboard")) | .number' | head -n 1 || true)"
+          DASHBOARD_ISSUE_NUMBER="$(gh issue list --state open --search "Dependency Dashboard in:title" --limit 1000 --json number --jq '.[0].number // empty' || true)"
           if [ -z "${DASHBOARD_ISSUE_NUMBER}" ]; then
             echo "No open Renovate Dependency Dashboard issue found."
           else
@@ -165,7 +165,7 @@ jobs:
         run: |
           echo "Opened renovate PR count: ${{ steps.retry_renovate_pr.outputs.open_renovate_pr_count }}"
           echo "Retried failed workflow runs: ${{ steps.retry_renovate_pr.outputs.retried_run_count }}"
-          if [ "${{ steps.retry_renovate_pr.outputs.open_renovate_pr_count }}" = "0" ] && [ "${{ steps.retry_renovate_pr.outputs.retried_run_count }}" = "0" ]; then
+          if [ "${{ steps.retry_renovate_pr.outputs.open_renovate_pr_count }}" -eq 0 ] && [ "${{ steps.retry_renovate_pr.outputs.retried_run_count }}" -eq 0 ]; then
             echo "Skipped Renovate trigger: no open renovate PR."
           elif [ "${{ steps.find_renovate_dashboard.outputs.dashboard_issue_number }}" = "" ]; then
             echo "Skipped Renovate trigger: no open Renovate Dependency Dashboard issue found."
