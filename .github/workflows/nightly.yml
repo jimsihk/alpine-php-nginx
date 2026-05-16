@@ -92,6 +92,7 @@ jobs:
       contents: read
       actions: write
       pull-requests: read
+      issues: read
     runs-on: ubuntu-latest
     steps:
       - uses: step-security/harden-runner@v2
@@ -102,14 +103,68 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Retry opened renovate PR which has been failed
+        id: retry_renovate_pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr list --state "open" --json headRefName --jq '.[] | select(.headRefName|test("${{ env.RETRY_PR_BRANCH_PREFIX }}/.")) | .headRefName' | while read PR_BRANCH
-          do
-            gh run list --event pull_request --status failure --workflow "Build and test PR" --branch "$PR_BRANCH" --limit 1 --json databaseId,headBranch --jq '.[] | join(" ")' | while read WORKFLOW_ID WORKFLOW_BRANCH
-            do
-              echo "Retrying for $WORKFLOW_BRANCH"
-              gh run rerun "$WORKFLOW_ID"
+          set -euo pipefail
+
+          OPEN_RENOVATE_PR_BRANCHES="$(gh pr list --state "open" --json headRefName --jq '.[] | select(.headRefName|test("${{ env.RETRY_PR_BRANCH_PREFIX }}/.")) | .headRefName')"
+          OPEN_RENOVATE_PR_COUNT="$(printf "%s\n" "$OPEN_RENOVATE_PR_BRANCHES" | sed '/^$/d' | wc -l | tr -d " ")"
+          RETRIED_RUN_COUNT=0
+
+          if [ "$OPEN_RENOVATE_PR_COUNT" -eq 0 ]; then
+            echo "No opened renovate PR found."
+          else
+            for PR_BRANCH in $OPEN_RENOVATE_PR_BRANCHES; do
+              WORKFLOW_ID="$(gh run list --event pull_request --status failure --workflow "Build and test PR" --branch "$PR_BRANCH" --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
+              if [ -n "$WORKFLOW_ID" ]; then
+                echo "Retrying failed 'Build and test PR' run (${WORKFLOW_ID}) for branch ${PR_BRANCH}"
+                gh run rerun "$WORKFLOW_ID"
+                RETRIED_RUN_COUNT=$((RETRIED_RUN_COUNT + 1))
+              else
+                echo "No failed 'Build and test PR' run to retry for ${PR_BRANCH}"
+              fi
             done
-          done
+          fi
+
+          echo "open_renovate_pr_count=${OPEN_RENOVATE_PR_COUNT}" >> "$GITHUB_OUTPUT"
+          echo "retried_run_count=${RETRIED_RUN_COUNT}" >> "$GITHUB_OUTPUT"
+
+      - name: Find Renovate Dependency Dashboard issue
+        id: find_renovate_dashboard
+        if: ${{ always() && (steps.retry_renovate_pr.outputs.open_renovate_pr_count != '0' || steps.retry_renovate_pr.outputs.retried_run_count != '0') }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          DASHBOARD_ISSUE_NUMBER="$(gh issue list --state open --limit 200 --json number,title --jq '.[] | select(.title|test("Dependency Dashboard")) | .number' | head -n 1 || true)"
+          if [ -z "${DASHBOARD_ISSUE_NUMBER}" ]; then
+            echo "No open Renovate Dependency Dashboard issue found."
+          else
+            echo "Found open Renovate Dependency Dashboard issue: #${DASHBOARD_ISSUE_NUMBER}"
+          fi
+          echo "dashboard_issue_number=${DASHBOARD_ISSUE_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger Renovate via Dependency Dashboard checkbox
+        if: ${{ always() && (steps.retry_renovate_pr.outputs.open_renovate_pr_count != '0' || steps.retry_renovate_pr.outputs.retried_run_count != '0') && steps.find_renovate_dashboard.outputs.dashboard_issue_number != '' }}
+        continue-on-error: true
+        timeout-minutes: 2
+        uses: Jolg42/action-renovate-checkbox@v1
+        with:
+          master-issue-id: ${{ steps.find_renovate_dashboard.outputs.dashboard_issue_number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Retry-pr summary
+        if: always()
+        run: |
+          echo "Opened renovate PR count: ${{ steps.retry_renovate_pr.outputs.open_renovate_pr_count }}"
+          echo "Retried failed workflow runs: ${{ steps.retry_renovate_pr.outputs.retried_run_count }}"
+          if [ "${{ steps.retry_renovate_pr.outputs.open_renovate_pr_count }}" = "0" ] && [ "${{ steps.retry_renovate_pr.outputs.retried_run_count }}" = "0" ]; then
+            echo "Skipped Renovate trigger: no open renovate PR."
+          elif [ "${{ steps.find_renovate_dashboard.outputs.dashboard_issue_number }}" = "" ]; then
+            echo "Skipped Renovate trigger: no open Renovate Dependency Dashboard issue found."
+          else
+            echo "Renovate trigger attempted for dashboard issue #${{ steps.find_renovate_dashboard.outputs.dashboard_issue_number }}."
+          fi
