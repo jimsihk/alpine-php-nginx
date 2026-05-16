@@ -110,7 +110,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          OPEN_RENOVATE_PR_BRANCHES="$(gh pr list --state "open" --json headRefName --jq '.[] | select(.headRefName|test("${{ env.RETRY_PR_BRANCH_PREFIX }}/.*")) | .headRefName')"
+          OPEN_RENOVATE_PR_BRANCHES="$(gh pr list --state "open" --json headRefName --jq '.[] | select(.headRefName|startswith("${{ env.RETRY_PR_BRANCH_PREFIX }}/")) | .headRefName')"
           if [ -z "$OPEN_RENOVATE_PR_BRANCHES" ]; then
             OPEN_RENOVATE_PR_COUNT=0
           else
