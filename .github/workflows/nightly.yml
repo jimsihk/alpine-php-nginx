@@ -121,7 +121,8 @@ jobs:
           if [ "$OPEN_RENOVATE_PR_COUNT" -eq 0 ]; then
             echo "No opened renovate PR found."
           else
-            for PR_BRANCH in $OPEN_RENOVATE_PR_BRANCHES; do
+            while IFS= read -r PR_BRANCH; do
+              [ -z "$PR_BRANCH" ] && continue
               WORKFLOW_ID="$(gh run list --event pull_request --status failure --workflow "Build and test PR" --branch "$PR_BRANCH" --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
               if [ -n "$WORKFLOW_ID" ]; then
                 echo "Retrying failed 'Build and test PR' run (${WORKFLOW_ID}) for branch ${PR_BRANCH}"
@@ -130,7 +131,7 @@ jobs:
               else
                 echo "No failed 'Build and test PR' run to retry for ${PR_BRANCH}"
               fi
-            done
+            done <<< "$OPEN_RENOVATE_PR_BRANCHES"
           fi
 
           echo "open_renovate_pr_count=${OPEN_RENOVATE_PR_COUNT}" >> "$GITHUB_OUTPUT"
