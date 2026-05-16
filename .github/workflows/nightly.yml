@@ -110,7 +110,11 @@ jobs:
           set -euo pipefail
 
           OPEN_RENOVATE_PR_BRANCHES="$(gh pr list --state "open" --json headRefName --jq '.[] | select(.headRefName|test("${{ env.RETRY_PR_BRANCH_PREFIX }}/.")) | .headRefName')"
-          OPEN_RENOVATE_PR_COUNT="$(printf "%s\n" "$OPEN_RENOVATE_PR_BRANCHES" | sed '/^$/d' | wc -l | tr -d " ")"
+          if [ -z "$OPEN_RENOVATE_PR_BRANCHES" ]; then
+            OPEN_RENOVATE_PR_COUNT=0
+          else
+            OPEN_RENOVATE_PR_COUNT="$(printf "%s\n" "$OPEN_RENOVATE_PR_BRANCHES" | wc -l | tr -d " ")"
+          fi
           RETRIED_RUN_COUNT=0
 
           if [ "$OPEN_RENOVATE_PR_COUNT" -eq 0 ]; then
@@ -138,7 +142,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          DASHBOARD_ISSUE_NUMBER="$(gh issue list --state open --limit 200 --json number,title --jq '.[] | select(.title|test("Dependency Dashboard")) | .number' | head -n 1 || true)"
+          DASHBOARD_ISSUE_NUMBER="$(gh issue list --state open --search "Dependency Dashboard in:title" --limit 1000 --json number,title --jq '.[] | select(.title|test("Dependency Dashboard")) | .number' | head -n 1 || true)"
           if [ -z "${DASHBOARD_ISSUE_NUMBER}" ]; then
             echo "No open Renovate Dependency Dashboard issue found."
           else
