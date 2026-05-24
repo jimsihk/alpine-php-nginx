@@ -28,8 +28,8 @@ ARG PHP_PECL_APCU_VERSION="=5.1.28-r0"
 ARG PHP_PECL_MEMCACHED_VERSION="=3.4.0-r0"
 # renovate: datasource=repology depName=alpine_3_23/php84-pecl-redis versioning=loose
 ARG PHP_PECL_REDIS_VERSION="=6.3.0-r0"
-# renovate: datasource=repology depName=alpine_3_23/nginx versioning=loose
-ARG NGINX_VERSION="=1.28.3-r1"
+# renovate: datasource=nginx-version depName=nginx versioning=semver
+ARG NGINX_VERSION="1.30.0-r1"
 # renovate: datasource=repology depName=alpine_3_23/runit versioning=loose
 ARG RUNIT_VERSION="=2.3.0-r0"
 # renovate: datasource=repology depName=alpine_3_23/curl versioning=loose
@@ -38,6 +38,13 @@ ARG CURL_VERSION="=8.19.0-r0"
 ARG GETTEXT_VERSION="=0.24.1-r1"
 # renovate: datasource=repology depName=alpine_3_23/libssl3 versioning=loose
 ARG LIBSSL3_VERSION="=3.5.6-r0"
+
+# Add nginx.org repository for official nginx packages
+RUN apk add --no-cache curl ca-certificates \
+    && mkdir -p /etc/apk/keys \
+    && curl -o /etc/apk/keys/nginx_signing.rsa.pub https://nginx.org/keys/nginx_signing.rsa.pub \
+    && echo "https://nginx.org/packages/alpine/v3.23/main" >> /etc/apk/repositories \
+    && apk update
 
 # Install packages
 RUN apk --no-cache add \
@@ -70,7 +77,7 @@ RUN apk --no-cache add \
         ${PHP_RUNTIME}-gd${PHP_VERSION} \
         ${PHP_RUNTIME}-sodium${PHP_VERSION} \
         ${PHP_RUNTIME}-exif${PHP_VERSION} \
-        nginx${NGINX_VERSION} \
+        nginx=${NGINX_VERSION} \
         runit${RUNIT_VERSION} \
         curl${CURL_VERSION} \
         # ${PHP_RUNTIME}-pdo \
@@ -101,7 +108,7 @@ RUN apk --no-cache add \
 # Remove alpine cache
     && rm -rf /var/cache/apk/* \
 # Remove default server definition
-    && rm /etc/nginx/http.d/default.conf \
+    && rm -f /etc/nginx/conf.d/default.conf \
 # Make sure files/folders needed by the processes are accessible when they run under the nobody user
     && chown -R nobody:nobody /run /var/lib/nginx /var/log/nginx
 
