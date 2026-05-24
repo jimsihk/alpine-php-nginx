@@ -29,7 +29,7 @@ ARG PHP_PECL_MEMCACHED_VERSION="=3.4.0-r0"
 # renovate: datasource=repology depName=alpine_3_23/php84-pecl-redis versioning=loose
 ARG PHP_PECL_REDIS_VERSION="=6.3.0-r0"
 # renovate: datasource=nginx-version depName=nginx versioning=semver
-ARG NGINX_VERSION="1.30.2-r0"
+ARG NGINX_VERSION="1.30.0-r1"
 # renovate: datasource=repology depName=alpine_3_23/runit versioning=loose
 ARG RUNIT_VERSION="=2.3.0-r0"
 # renovate: datasource=repology depName=alpine_3_23/curl versioning=loose
@@ -40,9 +40,11 @@ ARG GETTEXT_VERSION="=0.24.1-r1"
 ARG LIBSSL3_VERSION="=3.5.6-r0"
 
 # Add nginx.org repository for official nginx packages
-RUN mkdir -p /etc/apk/keys \
-    && wget -O /etc/apk/keys/nginx_signing.rsa.pub https://nginx.org/keys/nginx_signing.rsa.pub \
-    && echo "https://nginx.org/packages/alpine/v3.23/main" >> /etc/apk/repositories
+RUN apk add --no-cache curl ca-certificates \
+    && mkdir -p /etc/apk/keys \
+    && curl -o /etc/apk/keys/nginx_signing.rsa.pub https://nginx.org/keys/nginx_signing.rsa.pub \
+    && echo "https://nginx.org/packages/alpine/v3.23/main" >> /etc/apk/repositories \
+    && apk update
 
 # Install packages
 RUN apk --no-cache add \
