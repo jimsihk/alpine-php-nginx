@@ -28,8 +28,8 @@ ARG PHP_PECL_APCU_VERSION="=5.1.28-r0"
 ARG PHP_PECL_MEMCACHED_VERSION="=3.4.0-r0"
 # renovate: datasource=repology depName=alpine_3_23/php84-pecl-redis versioning=loose
 ARG PHP_PECL_REDIS_VERSION="=6.3.0-r0"
-# renovate: datasource=repology depName=alpine_3_23/nginx versioning=loose
-ARG NGINX_VERSION="=1.28.3-r1"
+# renovate: datasource=nginx depName=nginx versioning=nginx
+ARG NGINX_VERSION="1.30.2"
 # renovate: datasource=repology depName=alpine_3_23/runit versioning=loose
 ARG RUNIT_VERSION="=2.3.0-r0"
 # renovate: datasource=repology depName=alpine_3_23/curl versioning=loose
@@ -70,7 +70,6 @@ RUN apk --no-cache add \
         ${PHP_RUNTIME}-gd${PHP_VERSION} \
         ${PHP_RUNTIME}-sodium${PHP_VERSION} \
         ${PHP_RUNTIME}-exif${PHP_VERSION} \
-        nginx${NGINX_VERSION} \
         runit${RUNIT_VERSION} \
         curl${CURL_VERSION} \
         # ${PHP_RUNTIME}-pdo \
@@ -78,6 +77,10 @@ RUN apk --no-cache add \
         # ${PHP_RUNTIME}-pdo_mysql \
         # ${PHP_RUNTIME}-pdo_sqlite \
         # ${PHP_RUNTIME}-bz2 \
+# Install nginx from nginx.org pre-built packages
+    && curl -o /etc/apk/keys/nginx_signing.rsa.pub https://nginx.org/keys/nginx_signing.rsa.pub \
+    && printf "%s\n" "https://nginx.org/packages/mainline/alpine/v$(grep -oE '^[0-9]+\.[0-9]+' /etc/alpine-release)/main" >> /etc/apk/repositories \
+    && apk add --no-cache nginx~=${NGINX_VERSION} \
 # Create symlink so programs depending on `php` and `php-fpm` still function
     && if [ ! -L /usr/bin/php ]; then ln -s /usr/bin/${PHP_RUNTIME} /usr/bin/php; fi \
     && if [ -d /etc/${PHP_RUNTIME} ]; then mv /etc/${PHP_RUNTIME} /etc/php && ln -s /etc/php /etc/${PHP_RUNTIME}; fi \
@@ -101,8 +104,9 @@ RUN apk --no-cache add \
 # Remove alpine cache
     && rm -rf /var/cache/apk/* \
 # Remove default server definition
-    && rm /etc/nginx/http.d/default.conf \
+    && rm -f /etc/nginx/conf.d/default.conf \
 # Make sure files/folders needed by the processes are accessible when they run under the nobody user
+    && mkdir -p /var/lib/nginx /var/log/nginx /run /etc/nginx/conf.d/default/server \
     && chown -R nobody:nobody /run /var/lib/nginx /var/log/nginx
 
 # Workaround for using gnu-iconv instead of iconv in PHP on Alpine
