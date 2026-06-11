@@ -37,7 +37,7 @@ ARG CURL_VERSION="=8.20.0-r1"
 # renovate: datasource=repology depName=alpine_3_24/gettext versioning=loose
 ARG GETTEXT_VERSION="=1.0-r0"
 # renovate: datasource=repology depName=alpine_3_24/libssl3 versioning=loose
-ARG LIBSSL3_VERSION="=3.5.6-r0"
+ARG LIBSSL3_VERSION="=3.5.7-r0"
 
 # Install packages
 RUN apk --no-cache add \
