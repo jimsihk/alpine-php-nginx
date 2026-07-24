@@ -113,3 +113,22 @@ jobs:
               gh run rerun "$WORKFLOW_ID"
             done
           done
+
+  # Trigger renovate checking for updated alpine packages if failure
+  renovate-check:
+    permissions:
+      issue: write
+    runs-on: ubuntu-latest
+    needs: [build-container]
+    steps:
+      - uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - name: Check for dependency update
+        if: ${{ needs.build-container.result == 'failure' }}
+        uses: Jolg42/action-renovate-checkbox@v1
+        with:
+          master-issue-id: ${{ vars.RENOVATE_ISSUE_ID }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
