@@ -38,6 +38,8 @@ ARG CURL_VERSION="=8.21.0-r0"
 ARG GETTEXT_VERSION="=1.0-r0"
 # renovate: datasource=repology depName=alpine_3_24/libssl3 versioning=loose
 ARG LIBSSL3_VERSION="=3.5.7-r0"
+# renovate: datasource=repology depName=alpine_3_24/gnu-libiconv versioning=loose
+ARG GNUICONV_VERSION="=1.18-r0"
 
 # Install packages
 RUN apk --no-cache add \
@@ -78,7 +80,7 @@ RUN apk --no-cache add \
         # ${PHP_RUNTIME}-pdo_mysql \
         # ${PHP_RUNTIME}-pdo_sqlite \
         # ${PHP_RUNTIME}-bz2 \
-        gnu-libiconv \
+        gnu-libiconv${GNUICONV_VERSION} \
 # Create symlink so programs depending on `php` and `php-fpm` still function
     && if [ ! -L /usr/bin/php ]; then ln -s /usr/bin/${PHP_RUNTIME} /usr/bin/php; fi \
     && if [ -d /etc/${PHP_RUNTIME} ]; then mv /etc/${PHP_RUNTIME} /etc/php && ln -s /etc/php /etc/${PHP_RUNTIME}; fi \
