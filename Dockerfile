@@ -1,14 +1,4 @@
 ARG ARCH=
-#FROM ${ARCH}alpine:3.24.1 AS build
-
-#ARG GNU_LIBICONV_VERSION="=1.15-r3"
-
-#RUN apk --no-cache add \
-# Workaround for using gnu-iconv instead of iconv in PHP on Alpine
-# https://github.com/docker-library/php/issues/240#issuecomment-876464325
-#      --repository http://dl-cdn.alpinelinux.org/alpine/v3.13/community/ \
-#        gnu-libiconv${GNU_LIBICONV_VERSION}
-
 FROM ${ARCH}alpine:3.24.1
 
 LABEL org.opencontainers.image.title="alpine-php-nginx" \
@@ -108,11 +98,7 @@ RUN apk --no-cache add \
 # Make sure files/folders needed by the processes are accessible when they run under the nobody user
     && chown -R nobody:nobody /run /var/lib/nginx /var/log/nginx
 
-# Workaround for using gnu-iconv instead of iconv in PHP on Alpine
-# https://github.com/docker-library/php/issues/240#issuecomment-876464325
-#COPY --from=build /usr/lib/preloadable_libiconv.so /usr/lib/preloadable_libiconv.so
-#ENV LD_PRELOAD=/usr/lib/preloadable_libiconv.so
-# Replace stock musl-linked php iconv with the GNU libiconv build from the builder stage.
+# Replace stock musl-linked php iconv with the GNU libiconv build from upstream.
 # Runtime needs libiconv.so.2 (gnu-libiconv / gnu-libiconv-libs).
 COPY --from=erseco/alpine-php-webserver:3.23 /usr/lib/${PHP_RUNTIME}/modules/iconv.so /usr/lib/${PHP_RUNTIME}/modules/iconv.so
 
