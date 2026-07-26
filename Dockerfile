@@ -1,14 +1,4 @@
 ARG ARCH=
-FROM ${ARCH}alpine:3.24.1 AS build
-
-ARG GNU_LIBICONV_VERSION="=1.15-r3"
-
-RUN apk --no-cache add \
-# Workaround for using gnu-iconv instead of iconv in PHP on Alpine
-# https://github.com/docker-library/php/issues/240#issuecomment-876464325
-      --repository http://dl-cdn.alpinelinux.org/alpine/v3.13/community/ \
-        gnu-libiconv${GNU_LIBICONV_VERSION}
-
 FROM ${ARCH}alpine:3.24.1
 
 LABEL org.opencontainers.image.title="alpine-php-nginx" \
@@ -38,6 +28,8 @@ ARG CURL_VERSION="=8.21.0-r0"
 ARG GETTEXT_VERSION="=1.0-r0"
 # renovate: datasource=repology depName=alpine_3_24/libssl3 versioning=loose
 ARG LIBSSL3_VERSION="=3.5.7-r0"
+# renovate: datasource=repology depName=alpine_3_24/gnu-libiconv versioning=loose
+ARG GNU_LIBICONV_VERSION="=1.18-r0"
 
 # Install packages
 RUN apk --no-cache add \
@@ -78,6 +70,7 @@ RUN apk --no-cache add \
         # ${PHP_RUNTIME}-pdo_mysql \
         # ${PHP_RUNTIME}-pdo_sqlite \
         # ${PHP_RUNTIME}-bz2 \
+        gnu-libiconv${GNU_LIBICONV_VERSION} \
 # Create symlink so programs depending on `php` and `php-fpm` still function
     && if [ ! -L /usr/bin/php ]; then ln -s /usr/bin/${PHP_RUNTIME} /usr/bin/php; fi \
     && if [ -d /etc/${PHP_RUNTIME} ]; then mv /etc/${PHP_RUNTIME} /etc/php && ln -s /etc/php /etc/${PHP_RUNTIME}; fi \
@@ -105,10 +98,8 @@ RUN apk --no-cache add \
 # Make sure files/folders needed by the processes are accessible when they run under the nobody user
     && chown -R nobody:nobody /run /var/lib/nginx /var/log/nginx
 
-# Workaround for using gnu-iconv instead of iconv in PHP on Alpine
-# https://github.com/docker-library/php/issues/240#issuecomment-876464325
-COPY --from=build /usr/lib/preloadable_libiconv.so /usr/lib/preloadable_libiconv.so
-ENV LD_PRELOAD=/usr/lib/preloadable_libiconv.so
+# Replace stock musl-linked php iconv with the GNU libiconv build from upstream.
+COPY --from=ghcr.io/erseco/alpine-php-webserver:3.23 /usr/lib/${PHP_RUNTIME}/modules/iconv.so /usr/lib/${PHP_RUNTIME}/modules/iconv.so
 
 # Add configuration files
 COPY --chown=nobody rootfs/ /
