@@ -11,7 +11,7 @@ ARG PHP_V=84
 ENV PHP_RUNTIME=php${PHP_V}
 ENV PHP_FPM_RUNTIME=php-fpm${PHP_V}
 # renovate: datasource=repology depName=alpine_3_24/php84 versioning=loose
-ENV PHP_VERSION="=8.4.23-r0"
+ENV PHP_VERSION="=8.4.24-r0"
 # renovate: datasource=repology depName=alpine_3_24/php84-pecl-apcu versioning=loose
 ARG PHP_PECL_APCU_VERSION="=5.1.28-r0"
 # renovate: datasource=repology depName=alpine_3_24/php84-pecl-memcached versioning=loose
@@ -99,7 +99,7 @@ RUN apk --no-cache add \
     && chown -R nobody:nobody /run /var/lib/nginx /var/log/nginx
 
 # Replace stock musl-linked php iconv with the GNU libiconv build from upstream.
-COPY --from=ghcr.io/erseco/alpine-php-webserver:3.23 /usr/lib/${PHP_RUNTIME}/modules/iconv.so /usr/lib/${PHP_RUNTIME}/modules/iconv.so
+COPY --from=ghcr.io/erseco/alpine-php-webserver:3.24 /usr/lib/${PHP_RUNTIME}/modules/iconv.so /usr/lib/${PHP_RUNTIME}/modules/iconv.so
 
 # Add configuration files
 COPY --chown=nobody rootfs/ /
