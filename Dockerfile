@@ -11,7 +11,7 @@ ARG PHP_V=84
 ENV PHP_RUNTIME=php${PHP_V}
 ENV PHP_FPM_RUNTIME=php-fpm${PHP_V}
 # renovate: datasource=repology depName=alpine_3_24/php84 versioning=loose
-ENV PHP_VERSION="=8.4.23-r0"
+ENV PHP_VERSION="=8.4.24-r0"
 # renovate: datasource=repology depName=alpine_3_24/php84-pecl-apcu versioning=loose
 ARG PHP_PECL_APCU_VERSION="=5.1.28-r0"
 # renovate: datasource=repology depName=alpine_3_24/php84-pecl-memcached versioning=loose
