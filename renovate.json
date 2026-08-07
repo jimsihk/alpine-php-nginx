@@ -18,12 +18,14 @@
       "groupName": "all non-major dependencies",
       "groupSlug": "all-minor-patch",
       "matchPackageNames": [
-        "!alpine"
+        "!alpine",
+        "!ghcr.io/erseco/alpine-php-webserver"
       ]
     },
     {
       "matchPackageNames": [
-        "alpine"
+        "alpine",
+        "ghcr.io/erseco/alpine-php-webserver"
       ],
       "matchUpdateTypes": [
         "patch"
@@ -35,7 +37,8 @@
     },
     {
       "matchPackageNames": [
-        "alpine"
+        "alpine",
+        "ghcr.io/erseco/alpine-php-webserver"
       ],
       "matchUpdateTypes": [
         "minor",
