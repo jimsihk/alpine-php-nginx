@@ -1,15 +1,5 @@
 ARG ARCH=
-FROM ${ARCH}alpine:3.22.0 AS build
-
-ARG GNU_LIBICONV_VERSION="=1.15-r3"
-
-RUN apk --no-cache add \
-# Workaround for using gnu-iconv instead of iconv in PHP on Alpine
-# https://github.com/docker-library/php/issues/240#issuecomment-876464325
-      --repository http://dl-cdn.alpinelinux.org/alpine/v3.13/community/ \
-        gnu-libiconv${GNU_LIBICONV_VERSION}
-
-FROM ${ARCH}alpine:3.22.0
+FROM ${ARCH}alpine:3.24.1
 
 LABEL org.opencontainers.image.title="alpine-php-nginx" \
       org.opencontainers.image.description="Lightweight container with NGINX & PHP-FPM based on Alpine Linux." \
@@ -20,25 +10,26 @@ LABEL org.opencontainers.image.title="alpine-php-nginx" \
 ARG PHP_V=83
 ENV PHP_RUNTIME=php${PHP_V}
 ENV PHP_FPM_RUNTIME=php-fpm${PHP_V}
-# renovate: datasource=repology depName=alpine_3_22/php83 versioning=loose
-ENV PHP_VERSION="=8.3.22-r0"
-# renovate: datasource=repology depName=alpine_3_22/php83-pecl-apcu versioning=loose
-ARG PHP_PECL_APCU_VERSION="=5.1.24-r0"
-# renovate: datasource=repology depName=alpine_3_22/php83-pecl-memcached versioning=loose
-ARG PHP_PECL_MEMCACHED_VERSION="=3.3.0-r0"
-# renovate: datasource=repology depName=alpine_3_22/php83-pecl-redis versioning=loose
-ARG PHP_PECL_REDIS_VERSION="=6.2.0-r0"
-# renovate: datasource=repology depName=alpine_3_22/nginx versioning=loose
-ARG NGINX_VERSION="=1.28.0-r3"
-# renovate: datasource=repology depName=alpine_3_22/runit versioning=loose
-ARG RUNIT_VERSION="=2.2.0-r1"
-# renovate: datasource=repology depName=alpine_3_22/curl versioning=loose
-ARG CURL_VERSION="=8.14.1-r0"
-# renovate: datasource=repology depName=alpine_3_22/gettext versioning=loose
-ARG GETTEXT_VERSION="=0.24.1-r0"
-# renovate: datasource=repology depName=alpine_3_22/libssl3 versioning=loose
-ARG LIBSSL3_VERSION="=3.5.0-r0"
-
+# renovate: datasource=repology depName=alpine_3_24/php83 versioning=loose
+ENV PHP_VERSION="=8.3.33-r0"
+# renovate: datasource=repology depName=alpine_3_24/php83-pecl-apcu versioning=loose
+ARG PHP_PECL_APCU_VERSION="=5.1.28-r0"
+# renovate: datasource=repology depName=alpine_3_24/php83-pecl-memcached versioning=loose
+ARG PHP_PECL_MEMCACHED_VERSION="=3.4.0-r0"
+# renovate: datasource=repology depName=alpine_3_24/php83-pecl-redis versioning=loose
+ARG PHP_PECL_REDIS_VERSION="=6.3.0-r0"
+# renovate: datasource=repology depName=alpine_3_24/nginx versioning=loose
+ARG NGINX_VERSION="=1.30.4-r1"
+# renovate: datasource=repology depName=alpine_3_24/runit versioning=loose
+ARG RUNIT_VERSION="=2.3.1-r0"
+# renovate: datasource=repology depName=alpine_3_24/curl versioning=loose
+ARG CURL_VERSION="=8.21.0-r0"
+# renovate: datasource=repology depName=alpine_3_24/gettext versioning=loose
+ARG GETTEXT_VERSION="=1.0-r0"
+# renovate: datasource=repology depName=alpine_3_24/libssl3 versioning=loose
+ARG LIBSSL3_VERSION="=3.5.7-r0"
+# renovate: datasource=repology depName=alpine_3_24/gnu-libiconv versioning=loose
+ARG GNU_LIBICONV_VERSION="=1.18-r0"
 
 # Install packages
 RUN apk --no-cache add \
@@ -79,6 +70,7 @@ RUN apk --no-cache add \
         # ${PHP_RUNTIME}-pdo_mysql \
         # ${PHP_RUNTIME}-pdo_sqlite \
         # ${PHP_RUNTIME}-bz2 \
+        gnu-libiconv${GNU_LIBICONV_VERSION} \
 # Create symlink so programs depending on `php` and `php-fpm` still function
     && if [ ! -L /usr/bin/php ]; then ln -s /usr/bin/${PHP_RUNTIME} /usr/bin/php; fi \
     && if [ -d /etc/${PHP_RUNTIME} ]; then mv /etc/${PHP_RUNTIME} /etc/php && ln -s /etc/php /etc/${PHP_RUNTIME}; fi \
@@ -106,10 +98,8 @@ RUN apk --no-cache add \
 # Make sure files/folders needed by the processes are accessible when they run under the nobody user
     && chown -R nobody:nobody /run /var/lib/nginx /var/log/nginx
 
-# Workaround for using gnu-iconv instead of iconv in PHP on Alpine
-# https://github.com/docker-library/php/issues/240#issuecomment-876464325
-COPY --from=build /usr/lib/preloadable_libiconv.so /usr/lib/preloadable_libiconv.so
-ENV LD_PRELOAD=/usr/lib/preloadable_libiconv.so
+# Replace stock musl-linked php iconv with the GNU libiconv build from upstream.
+COPY --from=ghcr.io/erseco/alpine-php-webserver:3.20.11 /usr/lib/${PHP_RUNTIME}/modules/iconv.so /usr/lib/${PHP_RUNTIME}/modules/iconv.so
 
 # Add configuration files
 COPY --chown=nobody rootfs/ /
@@ -120,7 +110,8 @@ USER nobody
 # Add application
 WORKDIR /var/www/html
 
-ENV client_max_body_size=2M \
+ENV nginx_root_directory=/var/www/html \
+    client_max_body_size=2M \
     clear_env=no \
     allow_url_fopen=On \
     allow_url_include=Off \

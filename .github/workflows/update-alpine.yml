@@ -1,0 +1,244 @@
+name: Update Alpine Base Image
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # daily at 06:00 UTC
+  workflow_dispatch:
+  #push:
+  #  branches: ["copilot/update-alpine-dependencies-workflow"]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  DEFAULT_BRANCH: dev
+  UPDATE_BRANCH_PREFIX: chore/update-alpine
+
+jobs:
+  check-and-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - name: Generate release token
+        id: generate_release_token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.RELEASE_BOT_APP_ID }}
+          private_key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+
+      - name: Checkout default branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.DEFAULT_BRANCH }}
+          fetch-depth: 0
+          token: ${{ steps.generate_release_token.outputs.token }}
+
+      - name: Get current Alpine version from Dockerfile
+        id: current
+        run: |
+          VERSION=$(grep -m1 'FROM.*alpine:' Dockerfile | grep -oP '\d+\.\d+\.\d+')
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "major=$(echo ${VERSION} | cut -d'.' -f1)" >> $GITHUB_OUTPUT
+          echo "minor=$(echo ${VERSION} | cut -d'.' -f2)" >> $GITHUB_OUTPUT
+
+      - name: Get latest Alpine version from Docker Hub
+        id: latest
+        run: |
+          LATEST=$(curl -sf "https://hub.docker.com/v2/repositories/library/alpine/tags?page_size=100" | \
+            python3 -c "
+          import sys, json, re
+          data = json.load(sys.stdin)
+          versions = []
+          for tag in data.get('results', []):
+              m = re.match(r'^(\d+)\.(\d+)\.(\d+)$', tag['name'])
+              if m:
+                  versions.append(tuple(int(x) for x in m.groups()))
+          if versions:
+              v = max(versions)
+              print(f'{v[0]}.{v[1]}.{v[2]}')
+          ")
+          if [ -z "${LATEST}" ]; then
+            echo "Failed to determine latest Alpine version from Docker Hub"
+            exit 1
+          fi
+          echo "version=${LATEST}" >> $GITHUB_OUTPUT
+          echo "major=$(echo ${LATEST} | cut -d'.' -f1)" >> $GITHUB_OUTPUT
+          echo "minor=$(echo ${LATEST} | cut -d'.' -f2)" >> $GITHUB_OUTPUT
+
+      - name: Check if minor or major update is available
+        id: check
+        run: |
+          CURR_MAJOR=${{ steps.current.outputs.major }}
+          CURR_MINOR=${{ steps.current.outputs.minor }}
+          LATEST_MAJOR=${{ steps.latest.outputs.major }}
+          LATEST_MINOR=${{ steps.latest.outputs.minor }}
+          echo "Current Alpine: ${{ steps.current.outputs.version }} (major=${CURR_MAJOR}, minor=${CURR_MINOR})"
+          echo "Latest Alpine:  ${{ steps.latest.outputs.version }} (major=${LATEST_MAJOR}, minor=${LATEST_MINOR})"
+          if [ "${LATEST_MAJOR}" -gt "${CURR_MAJOR}" ] || \
+             ([ "${LATEST_MAJOR}" -eq "${CURR_MAJOR}" ] && [ "${LATEST_MINOR}" -gt "${CURR_MINOR}" ]); then
+            echo "Minor or major update is available"
+            echo "needed=true" >> $GITHUB_OUTPUT
+          else
+            echo "No minor or major update needed"
+            echo "needed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if update branch or PR already exists
+        if: steps.check.outputs.needed == 'true'
+        id: existing
+        env:
+          GH_TOKEN: ${{ steps.generate_release_token.outputs.token }}
+        run: |
+          NEW_VERSION=${{ steps.latest.outputs.version }}
+          BRANCH="${{ env.UPDATE_BRANCH_PREFIX }}-${NEW_VERSION}"
+          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+          if git ls-remote --heads origin "${BRANCH}" | grep -q "${BRANCH}"; then
+            echo "Branch ${BRANCH} already exists remotely, skipping"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get latest package versions for new Alpine version
+        if: steps.check.outputs.needed == 'true' && steps.existing.outputs.exists == 'false'
+        id: pkgs
+        run: |
+          NEW_VERSION=${{ steps.latest.outputs.version }}
+          PHP_V=$(grep 'ARG PHP_V=' Dockerfile | grep -oP '\d+')
+          echo "php_v=${PHP_V}" >> $GITHUB_OUTPUT
+
+          docker pull -q alpine:${NEW_VERSION}
+
+          # Write package version query script to a temp file to avoid heredoc escaping issues
+          cat > /tmp/query_pkgs.sh << 'QUERY_SCRIPT'
+          #!/bin/sh
+          PHP_V=$1
+          apk update -q 2>/dev/null
+          for pkg in \
+            php${PHP_V} \
+            php${PHP_V}-pecl-apcu \
+            php${PHP_V}-pecl-memcached \
+            php${PHP_V}-pecl-redis \
+            nginx \
+            runit \
+            curl \
+            gettext \
+            libssl3; do
+            result=$(apk search -e "$pkg" 2>/dev/null | head -1)
+            if [ -n "$result" ]; then
+              ver=$(echo "$result" | sed "s/^${pkg}-//")
+              if echo "$ver" | grep -qE '^[0-9]'; then
+                echo "$pkg=$ver"
+              fi
+            fi
+          done
+          QUERY_SCRIPT
+          chmod +x /tmp/query_pkgs.sh
+
+          docker run --rm \
+            -v /tmp/query_pkgs.sh:/query_pkgs.sh:ro \
+            alpine:${NEW_VERSION} \
+            /query_pkgs.sh "${PHP_V}" | tee /tmp/pkg_versions.txt
+
+          parse_ver() { grep "^$1=" /tmp/pkg_versions.txt | cut -d'=' -f2; }
+
+          echo "php_ver=$(parse_ver php${PHP_V})" >> $GITHUB_OUTPUT
+          echo "apcu_ver=$(parse_ver php${PHP_V}-pecl-apcu)" >> $GITHUB_OUTPUT
+          echo "memcached_ver=$(parse_ver php${PHP_V}-pecl-memcached)" >> $GITHUB_OUTPUT
+          echo "redis_ver=$(parse_ver php${PHP_V}-pecl-redis)" >> $GITHUB_OUTPUT
+          echo "nginx_ver=$(parse_ver nginx)" >> $GITHUB_OUTPUT
+          echo "runit_ver=$(parse_ver runit)" >> $GITHUB_OUTPUT
+          echo "curl_ver=$(parse_ver curl)" >> $GITHUB_OUTPUT
+          echo "gettext_ver=$(parse_ver gettext)" >> $GITHUB_OUTPUT
+          echo "libssl3_ver=$(parse_ver libssl3)" >> $GITHUB_OUTPUT
+
+      - name: Update Dockerfile with new Alpine version and package versions
+        if: steps.check.outputs.needed == 'true' && steps.existing.outputs.exists == 'false'
+        run: |
+          NEW_VERSION=${{ steps.latest.outputs.version }}
+          CURR_VERSION=${{ steps.current.outputs.version }}
+          NEW_MAJOR=${{ steps.latest.outputs.major }}
+          NEW_MINOR=${{ steps.latest.outputs.minor }}
+          CURR_MAJOR=${{ steps.current.outputs.major }}
+          CURR_MINOR=${{ steps.current.outputs.minor }}
+
+          # Update Alpine base image version in FROM lines
+          sed -i "s|alpine:${CURR_VERSION}|alpine:${NEW_VERSION}|g" Dockerfile
+
+          # Update alpine_X_Y prefix in renovate comments to match the new Alpine version
+          sed -i "s|depName=alpine_${CURR_MAJOR}_${CURR_MINOR}/|depName=alpine_${NEW_MAJOR}_${NEW_MINOR}/|g" Dockerfile
+
+          # Helper: update a version variable in Dockerfile only when a new version was found
+          update_version() {
+            local var_name="$1"
+            local new_ver="$2"
+            if [ -n "${new_ver}" ]; then
+              sed -i "s|\(${var_name}=\"=\).*\"|\1${new_ver}\"|" Dockerfile
+            fi
+          }
+
+          update_version "PHP_VERSION"              "${{ steps.pkgs.outputs.php_ver }}"
+          update_version "PHP_PECL_APCU_VERSION"    "${{ steps.pkgs.outputs.apcu_ver }}"
+          update_version "PHP_PECL_MEMCACHED_VERSION" "${{ steps.pkgs.outputs.memcached_ver }}"
+          update_version "PHP_PECL_REDIS_VERSION"   "${{ steps.pkgs.outputs.redis_ver }}"
+          update_version "NGINX_VERSION"            "${{ steps.pkgs.outputs.nginx_ver }}"
+          update_version "RUNIT_VERSION"            "${{ steps.pkgs.outputs.runit_ver }}"
+          update_version "CURL_VERSION"             "${{ steps.pkgs.outputs.curl_ver }}"
+          update_version "GETTEXT_VERSION"          "${{ steps.pkgs.outputs.gettext_ver }}"
+          update_version "LIBSSL3_VERSION"          "${{ steps.pkgs.outputs.libssl3_ver }}"
+
+          echo "--- Updated Dockerfile header ---"
+          head -45 Dockerfile
+
+      - name: Create update branch and push changes
+        if: steps.check.outputs.needed == 'true' && steps.existing.outputs.exists == 'false'
+        run: |
+          BRANCH="${{ steps.existing.outputs.branch }}"
+          NEW_VERSION=${{ steps.latest.outputs.version }}
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${BRANCH}"
+          git add Dockerfile
+          git diff --staged  # log changes for workflow debugging
+          git commit -m "Update alpine base image to ${NEW_VERSION}"
+          git push origin "${BRANCH}"
+
+      - name: Create pull request for review
+        if: steps.check.outputs.needed == 'true' && steps.existing.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ steps.generate_release_token.outputs.token }}
+        run: |
+          NEW_VERSION=${{ steps.latest.outputs.version }}
+          CURR_VERSION=${{ steps.current.outputs.version }}
+          BRANCH="${{ steps.existing.outputs.branch }}"
+          CURR_ALPINE_PREFIX="alpine_${{ steps.current.outputs.major }}_${{ steps.current.outputs.minor }}"
+          NEW_ALPINE_PREFIX="alpine_${{ steps.latest.outputs.major }}_${{ steps.latest.outputs.minor }}"
+
+          PR_BODY_FILE=$(mktemp)
+          cat > "${PR_BODY_FILE}" << PR_BODY_EOF
+          ## Alpine Base Image Update
+
+          Automated update of the Alpine base image from ${CURR_VERSION} to ${NEW_VERSION}.
+
+          ### Changes
+          - Updated Alpine base image version (${CURR_VERSION} to ${NEW_VERSION})
+          - Updated Renovate comment prefixes (${CURR_ALPINE_PREFIX} to ${NEW_ALPINE_PREFIX}) for continued Renovate tracking of package versions
+          - Updated Alpine package versions to latest available for Alpine ${NEW_VERSION}
+
+          ### Review Notes
+          > [!IMPORTANT]
+          > All CI tests must pass before merging. Please review all package version changes carefully.
+
+          This PR was automatically created by the [Update Alpine Base Image](../actions/workflows/update-alpine.yml) workflow.
+          PR_BODY_EOF
+
+          gh pr create \
+            --base "${{ env.DEFAULT_BRANCH }}" \
+            --head "${BRANCH}" \
+            --title "chore: update alpine base image from ${CURR_VERSION} to ${NEW_VERSION}" \
+            --body-file "${PR_BODY_FILE}"

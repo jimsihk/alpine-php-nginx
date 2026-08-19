@@ -27,10 +27,10 @@ jobs:
           egress-policy: audit
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Log in to the Nightly Container registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.IMAGE_REGISTRY }}
           username: ${{ github.actor }}
@@ -42,7 +42,7 @@ jobs:
           docker compose --file docker-compose.test.yml up --exit-code-from sut -t 10 --build
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
@@ -99,7 +99,7 @@ jobs:
           egress-policy: audit
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Retry opened renovate PR which has been failed
         env:
@@ -113,3 +113,22 @@ jobs:
               gh run rerun "$WORKFLOW_ID"
             done
           done
+
+  # Trigger renovate checking for updated alpine packages if failure
+  renovate-check:
+    permissions:
+      issues: write
+    runs-on: ubuntu-latest
+    needs: [build-container]
+    steps:
+      - uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - name: Check for dependency update
+        if: ${{ needs.build-container.result == 'failure' }}
+        uses: Jolg42/action-renovate-checkbox@v1
+        with:
+          master-issue-id: ${{ vars.RENOVATE_ISSUE_ID }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

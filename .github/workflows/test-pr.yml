@@ -20,7 +20,7 @@ jobs:
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Try build and Test
         run: |
@@ -29,17 +29,17 @@ jobs:
 
       - name: Set up QEMU
         id: qemu
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
         with:
           image: tonistiigi/binfmt:latest
           platforms: all
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
         id: buildx
 
       - name: Try build multi-arch
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: false
@@ -58,7 +58,7 @@ jobs:
           TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db
 
       - name: Run the Anchore scan action for PR
-        uses: anchore/scan-action@v6
+        uses: anchore/scan-action@v7
         id: anchore-scan-pr
         with:
           image: 'docker.io/${{ env.IMAGE_NAME }}:${{ github.sha }}'

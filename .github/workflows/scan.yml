@@ -25,7 +25,7 @@ jobs:
           echo "Scanning ${{ env.IMAGE }} of ${{ github.ref_name }}..."
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -37,12 +37,12 @@ jobs:
           TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db
 
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results.sarif'
 
       - name: Run the Anchore scan action itself with GitHub Advanced Security code scanning integration enabled
-        uses: anchore/scan-action@v6
+        uses: anchore/scan-action@v7
         id: anchore-scan
         with:
           image: ${{ env.IMAGE }}
@@ -50,6 +50,6 @@ jobs:
           fail-build: false
 
       - name: Upload Anchore Scan Report
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: ${{ steps.anchore-scan.outputs.sarif }}
