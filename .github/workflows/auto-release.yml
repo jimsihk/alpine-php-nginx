@@ -51,6 +51,7 @@ jobs:
           DEFAULT_BUMP: patch
           RELEASE_BRANCHES: ${{ vars.RELEASE_BRANCHES }}
           FORCE_WITHOUT_CHANGES: true
+          TAG_CONTEXT: branch
 
       - name: Set next version
         id: next_tag_version
@@ -86,7 +87,7 @@ jobs:
           echo "[${{ steps.php_version.outputs.tag }}] vs [${{ steps.next_tag_version.outputs.new_tag }}]"
           if [ -n "${{ steps.next_tag_version.outputs.new_tag }}" ]
           then
-            # Compare up to minor version
+            # Compare major and minor version
             PREFIX_PHP_TAG=`echo ${{ steps.php_version.outputs.tag }} | cut -d'.' -f1,2`
             PREFIX_NEW_TAG=`echo ${{ steps.next_tag_version.outputs.new_tag }} | cut -d'.' -f1,2`
             if [ "$PREFIX_PHP_TAG" = "$PREFIX_NEW_TAG" ];
