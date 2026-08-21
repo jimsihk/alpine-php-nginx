@@ -7,8 +7,6 @@ on:
         required: true
         type: string
     secrets:
-      RELEASE_BOT_APP_ID:
-        required: true
       RELEASE_BOT_PRIVATE_KEY:
         required: true
   #push:
@@ -33,7 +31,7 @@ jobs:
         id: generate_release_token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.RELEASE_BOT_APP_ID }}
+          client-id: ${{ vars.RELEASE_BOT_APP_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
 
       - name: Checkout code
@@ -69,13 +67,8 @@ jobs:
           PHP_MINOR=$(echo $PHP_V | sed 's/ //g' | cut -d'.' -f2)
           PHP_PATCH=$(echo $PHP_V | sed 's/ //g' | cut -d'.' -f3)
           echo "full=${PHP_V}" >> $GITHUB_OUTPUT
-
-          # format PHP version number to tag format
-          # <major><minor>.<patch (leading zero removed)>.0
-          # e.g. 8.0.27 --> 80.27.0
           PHP_TAG="$PHP_MAJOR$PHP_MINOR.$PHP_PATCH.0"
           echo "tag=${PHP_TAG}" >> $GITHUB_OUTPUT
-
           echo "PHP Major version: ${PHP_MAJOR}"
           echo "PHP Minor version: ${PHP_MINOR}"
           echo "PHP Patch version: ${PHP_PATCH}"
@@ -87,16 +80,13 @@ jobs:
           echo "[${{ steps.php_version.outputs.tag }}] vs [${{ steps.next_tag_version.outputs.new_tag }}]"
           if [ -n "${{ steps.next_tag_version.outputs.new_tag }}" ]
           then
-            # Compare major and minor version
             PREFIX_PHP_TAG=`echo ${{ steps.php_version.outputs.tag }} | cut -d'.' -f1,2`
             PREFIX_NEW_TAG=`echo ${{ steps.next_tag_version.outputs.new_tag }} | cut -d'.' -f1,2`
             if [ "$PREFIX_PHP_TAG" = "$PREFIX_NEW_TAG" ];
             then
-              # same PHP minor version
               echo "Use ${{ steps.next_tag_version.outputs.new_tag }}"
               echo "new_tag=${{ steps.next_tag_version.outputs.new_tag }}" >> $GITHUB_OUTPUT
             else
-              # PHP minor version changed
               echo "Use ${{ steps.php_version.outputs.tag }}"
               echo "new_tag=${{ steps.php_version.outputs.tag }}" >> $GITHUB_OUTPUT
             fi
@@ -122,7 +112,6 @@ jobs:
           echo "previous_tag=$LAST_TAG" >> $GITHUB_OUTPUT
           echo "previous_tag_commit=$LAST_TAG_COMMIT" >> $GITHUB_OUTPUT
           echo "Last tag at $LAST_TAG with SHA $LAST_TAG_COMMIT"
-          #Also get last commit before using tj-actions/changed-files as it assumed the commit hash must be different or error will be returned
           LAST_COMMIT=$(git rev-parse HEAD)
           echo "last_commit=$LAST_COMMIT" >> $GITHUB_OUTPUT
           echo "Last commit SHA is $LAST_COMMIT"
@@ -147,20 +136,13 @@ jobs:
         run: |
           docker run -i --entrypoint apk ${{ env.IMAGE_NAME }} list --installed > nightly.txt
           docker run -i --entrypoint apk quay.io/${{ github.repository }}:${{ steps.get_commit_sha.outputs.previous_tag }} list --installed > latest_tag.txt
-
-          # for debug
-          #cp nightly.txt latest_tag.txt
-
-          # Cannot directly use grep as last step since it will exit as 1 when not found values
           COUNT="$(diff -u latest_tag.txt nightly.txt | sed '1,/@@/d' | grep ^+ | wc -l)"
           echo "Number of differences: $COUNT"
-
           if [ "$COUNT" -gt 0 ]
           then
             echo "any_changed=true" >> $GITHUB_OUTPUT
             diff -u latest_tag.txt nightly.txt | sed '1,/@@/d' | grep ^+ | cut -d' ' -f1 | sed 's/^+//' > diff.txt
             cat diff.txt
-            #echo "all_changed_deps=`cat diff.txt`" >> $GITHUB_OUTPUT
           else
             echo "any_changed=false" >> $GITHUB_OUTPUT
           fi
@@ -168,7 +150,6 @@ jobs:
       - name: List changed alpine packages
         run: |
           echo "Any package changed? ${{ steps.changed-deps.outputs.any_changed }}"
-          #echo "Changed packages: ${{ steps.changed-deps.outputs.all_changed_deps }}"
 
       - name: Control release
         id: new-release
@@ -176,11 +157,6 @@ jobs:
           if [ ${{ steps.changed-files.outputs.any_changed }} = 'true' ] || [ ${{ steps.changed-deps.outputs.any_changed }} = 'true' ]
           then
             echo "required=true" >> $GITHUB_OUTPUT
-            #if [ ${{ steps.changed-files.outputs.any_changed }} != 'true' ] && [ ${{ steps.changed-deps.outputs.any_changed }} = 'true' ]
-            #then
-            #  temp_release_body="- Update dependency: ${{ steps.changed-deps.outputs.all_changed_deps }}"
-            #  echo "release_body=$temp_release_body" >> $GITHUB_OUTPUT
-            #fi
           else
             echo "required=false" >> $GITHUB_OUTPUT
           fi
@@ -188,7 +164,6 @@ jobs:
       - name: Debug release control
         run: |
           echo "Required? ${{ steps.new-release.outputs.required }}"
-          #echo "Body: ${{ steps.new-release.outputs.release_body }}"
 
       - name: Tag and create a GitHub release
         if: steps.new-release.outputs.required == 'true'
@@ -201,5 +176,3 @@ jobs:
           allowUpdates: false
           generateReleaseNotes: true
           token: ${{ steps.generate_release_token.outputs.token }}
-          #body: ${{ steps.new-release.outputs.release_body }}
-          #draft: true
