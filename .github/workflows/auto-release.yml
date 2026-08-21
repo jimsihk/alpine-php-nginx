@@ -57,7 +57,7 @@ jobs:
         id: next_tag_version
         run: |
           echo "new_tag=${{ steps.analyze_tag_history.outputs.new_tag }}" >> $GITHUB_OUTPUT
-          echo "previous_tag=${{ steps.analyze_tag_history.outputs.tag }}" >> $GITHUB_OUTPUT
+          echo "previous_tag=${{ steps.analyze_tag_history.outputs.old_tag }}" >> $GITHUB_OUTPUT
 
       - name: Get container PHP version
         id: php_version
