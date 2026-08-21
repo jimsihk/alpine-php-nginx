@@ -33,7 +33,7 @@ jobs:
         id: generate_release_token
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ vars.RELEASE_BOT_APP_ID }}
+          client-id: ${{ secrets.RELEASE_BOT_APP_ID }}
           private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
 
       - name: Checkout code
