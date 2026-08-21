@@ -51,7 +51,7 @@ jobs:
           DEFAULT_BUMP: patch
           RELEASE_BRANCHES: ${{ vars.RELEASE_BRANCHES }}
           FORCE_WITHOUT_CHANGES: true
-          TAG_CONTEXT: branch
+          TAG_CONTEXT: repo
 
       - name: Set next version
         id: next_tag_version
@@ -117,7 +117,7 @@ jobs:
       - name: Get commit SHA of last tag and last commit
         id: get_commit_sha
         run: |
-          LAST_TAG=`git tag --points-at $(git rev-list --tags --max-count=1) | sort | tail -1`
+          LAST_TAG="${{ steps.next_tag_version.outputs.previous_tag }}"
           LAST_TAG_COMMIT=`git rev-list -n 1 $LAST_TAG`
           echo "previous_tag=$LAST_TAG" >> $GITHUB_OUTPUT
           echo "previous_tag_commit=$LAST_TAG_COMMIT" >> $GITHUB_OUTPUT
