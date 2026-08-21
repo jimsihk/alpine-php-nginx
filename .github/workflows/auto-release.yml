@@ -7,6 +7,8 @@ on:
         required: true
         type: string
     secrets:
+      RELEASE_BOT_APP_ID:
+        required: true
       RELEASE_BOT_PRIVATE_KEY:
         required: true
   #push:
@@ -31,7 +33,7 @@ jobs:
         id: generate_release_token
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ vars.RELEASE_BOT_APP_CLIENT_ID }}
+          client-id: ${{ vars.RELEASE_BOT_APP_ID }}
           private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
 
       - name: Checkout code
@@ -61,7 +63,6 @@ jobs:
         id: php_version
         run: |
           docker run -i ${{ env.IMAGE_NAME }} php -r 'echo phpversion();' > version.txt
-          # e.g. 8.0.27
           PHP_V=$(tail -1 version.txt)
           PHP_MAJOR=$(echo $PHP_V | sed 's/ //g' | cut -d'.' -f1)
           PHP_MINOR=$(echo $PHP_V | sed 's/ //g' | cut -d'.' -f2)
