@@ -7,9 +7,9 @@ on:
         required: true
         type: string
     secrets:
-      RELEASE_BOT_APP_ID:
+      bot-client-id:
         required: true
-      RELEASE_BOT_PRIVATE_KEY:
+      bot-private-key:
         required: true
   #push:
   #  branches: ["fix/auto-release"]
@@ -33,8 +33,8 @@ jobs:
         id: generate_release_token
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ secrets.RELEASE_BOT_APP_ID }}
-          private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+          client-id: ${{ secrets.bot-client-id }}
+          private-key: ${{ secrets.bot-private-key }}
 
       - name: Checkout code
         uses: actions/checkout@v7
