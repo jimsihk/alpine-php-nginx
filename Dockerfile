@@ -27,7 +27,7 @@ ARG CURL_VERSION="=8.21.0-r0"
 # renovate: datasource=repology depName=alpine_3_24/gettext versioning=loose
 ARG GETTEXT_VERSION="=1.0-r0"
 # renovate: datasource=repology depName=alpine_3_24/libssl3 versioning=loose
-ARG LIBSSL3_VERSION="=3.5.7-r0"
+ARG LIBSSL3_VERSION="=3.5.8-r0"
 # renovate: datasource=repology depName=alpine_3_24/gnu-libiconv versioning=loose
 ARG GNU_LIBICONV_VERSION="=1.18-r0"
 
