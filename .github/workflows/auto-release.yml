@@ -161,6 +161,10 @@ jobs:
             diff -u latest_tag.txt nightly.txt | sed '1,/@@/d' | grep ^+ | cut -d' ' -f1 | sed 's/^+//' > diff.txt
             cat diff.txt
             #echo "all_changed_deps=`cat diff.txt`" >> $GITHUB_OUTPUT
+
+            # Output to step summary
+            echo "Changed alpine packages:" >> $GITHUB_STEP_SUMMARY
+            cat diff.txt >> $GITHUB_STEP_SUMMARY
           else
             echo "any_changed=false" >> $GITHUB_OUTPUT
           fi
@@ -181,8 +185,14 @@ jobs:
             #  temp_release_body="- Update dependency: ${{ steps.changed-deps.outputs.all_changed_deps }}"
             #  echo "release_body=$temp_release_body" >> $GITHUB_OUTPUT
             #fi
+
+            # Output to step summary
+            echo "Releasing new version: ${{ steps.get_changes.outputs.new_tag }}" >> $GITHUB_STEP_SUMMARY
           else
             echo "required=false" >> $GITHUB_OUTPUT
+
+            # Output to step summary
+            echo "No new version required" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Debug release control
