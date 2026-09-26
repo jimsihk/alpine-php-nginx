@@ -6,6 +6,18 @@
   "forkProcessing": "enabled",
   "packageRules": [
     {
+      "description": "Use Alpine Linux APK repositories for Dockerfile packages",
+      "matchFileNames": [
+        "Dockerfile"
+      ],
+      "matchDatasources": [
+        "apk"
+      ],
+      "registryUrls": [
+        "https://dl-cdn.alpinelinux.org/alpine?branch=v3.24&components=main,community&arch=x86_64"
+      ]
+    },
+    {
       "matchUpdateTypes": [
         "minor",
         "patch",
