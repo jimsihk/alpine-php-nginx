@@ -10,25 +10,25 @@ LABEL org.opencontainers.image.title="alpine-php-nginx" \
 ARG PHP_V=84
 ENV PHP_RUNTIME=php${PHP_V}
 ENV PHP_FPM_RUNTIME=php-fpm${PHP_V}
-# renovate: datasource=repology depName=alpine_3_24/php84 versioning=loose
+# renovate: datasource=apk depName=php84 versioning=loose
 ENV PHP_VERSION="=8.4.25-r0"
-# renovate: datasource=repology depName=alpine_3_24/php84-pecl-apcu versioning=loose
+# renovate: datasource=apk depName=php84-pecl-apcu versioning=loose
 ARG PHP_PECL_APCU_VERSION="=5.1.28-r0"
-# renovate: datasource=repology depName=alpine_3_24/php84-pecl-memcached versioning=loose
+# renovate: datasource=apk depName=php84-pecl-memcached versioning=loose
 ARG PHP_PECL_MEMCACHED_VERSION="=3.4.0-r0"
-# renovate: datasource=repology depName=alpine_3_24/php84-pecl-redis versioning=loose
+# renovate: datasource=apk depName=php84-pecl-redis versioning=loose
 ARG PHP_PECL_REDIS_VERSION="=6.3.0-r0"
-# renovate: datasource=repology depName=alpine_3_24/nginx versioning=loose
+# renovate: datasource=apk depName=nginx versioning=loose
 ARG NGINX_VERSION="=1.30.4-r1"
-# renovate: datasource=repology depName=alpine_3_24/runit versioning=loose
+# renovate: datasource=apk depName=runit versioning=loose
 ARG RUNIT_VERSION="=2.3.1-r0"
-# renovate: datasource=repology depName=alpine_3_24/curl versioning=loose
+# renovate: datasource=apk depName=curl versioning=loose
 ARG CURL_VERSION="=8.22.0-r0"
-# renovate: datasource=repology depName=alpine_3_24/gettext versioning=loose
+# renovate: datasource=apk depName=gettext versioning=loose
 ARG GETTEXT_VERSION="=1.0-r0"
-# renovate: datasource=repology depName=alpine_3_24/libssl3 versioning=loose
+# renovate: datasource=apk depName=libssl3 versioning=loose
 ARG LIBSSL3_VERSION="=3.5.8-r0"
-# renovate: datasource=repology depName=alpine_3_24/gnu-libiconv versioning=loose
+# renovate: datasource=apk depName=gnu-libiconv versioning=loose
 ARG GNU_LIBICONV_VERSION="=1.18-r0"
 
 # Install packages
