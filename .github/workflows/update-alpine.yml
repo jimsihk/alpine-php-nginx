@@ -170,7 +170,7 @@ jobs:
           sed -i "s|alpine:${CURR_VERSION}|alpine:${NEW_VERSION}|g" Dockerfile
 
           # Update the Renovate APK repository branch to match the new Alpine major/minor version
-          sed -E "s|branch=v[0-9]+\.[0-9]+|branch=v${NEW_MAJOR}.${NEW_MINOR}|" renovate.json > renovate.json.tmp
+          sed -E "s|^([[:space:]]*\"https://dl-cdn\.alpinelinux\.org/alpine\?branch=)v[0-9]+\.[0-9]+(&components=main,community&arch=x86_64\")$|\1v${NEW_MAJOR}.${NEW_MINOR}\2|" renovate.json > renovate.json.tmp
           mv renovate.json.tmp renovate.json
 
           # Helper: update a version variable in Dockerfile only when a new version was found
