@@ -169,8 +169,9 @@ jobs:
           # Update Alpine base image version in FROM lines
           sed -i "s|alpine:${CURR_VERSION}|alpine:${NEW_VERSION}|g" Dockerfile
 
-          # Update alpine_X_Y prefix in renovate comments to match the new Alpine version
-          sed -i "s|depName=alpine_${CURR_MAJOR}_${CURR_MINOR}/|depName=alpine_${NEW_MAJOR}_${NEW_MINOR}/|g" Dockerfile
+          # Update the Renovate APK repository branch to match the new Alpine major/minor version
+          sed -E "s|branch=v[0-9]+\.[0-9]+|branch=v${NEW_MAJOR}.${NEW_MINOR}|" renovate.json > renovate.json.tmp
+          mv renovate.json.tmp renovate.json
 
           # Helper: update a version variable in Dockerfile only when a new version was found
           update_version() {
@@ -203,7 +204,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "${BRANCH}"
-          git add Dockerfile
+          git add Dockerfile renovate.json
           git diff --staged  # log changes for workflow debugging
           git commit -m "Update alpine base image to ${NEW_VERSION}"
           git push origin "${BRANCH}"
@@ -227,7 +228,7 @@ jobs:
 
           ### Changes
           - Updated Alpine base image version (${CURR_VERSION} to ${NEW_VERSION})
-          - Updated Renovate comment prefixes (${CURR_ALPINE_PREFIX} to ${NEW_ALPINE_PREFIX}) for continued Renovate tracking of package versions
+          - Updated the Renovate APK registry branch to match the new Alpine major/minor version
           - Updated Alpine package versions to latest available for Alpine ${NEW_VERSION}
 
           ### Review Notes
