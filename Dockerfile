@@ -19,7 +19,7 @@ ARG PHP_PECL_MEMCACHED_VERSION="=3.4.0-r0"
 # renovate: datasource=apk depName=php84-pecl-redis versioning=loose
 ARG PHP_PECL_REDIS_VERSION="=6.3.0-r0"
 # renovate: datasource=apk depName=nginx versioning=loose
-ARG NGINX_VERSION="=1.30.4-r1"
+ARG NGINX_VERSION="=1.30.6-r0"
 # renovate: datasource=apk depName=runit versioning=loose
 ARG RUNIT_VERSION="=2.3.1-r0"
 # renovate: datasource=apk depName=curl versioning=loose
