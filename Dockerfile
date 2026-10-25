@@ -23,7 +23,7 @@ ARG NGINX_VERSION="=1.30.6-r0"
 # renovate: datasource=apk depName=runit versioning=loose
 ARG RUNIT_VERSION="=2.3.1-r0"
 # renovate: datasource=apk depName=curl versioning=loose
-ARG CURL_VERSION="=8.22.0-r0"
+ARG CURL_VERSION="=8.23.0-r0"
 # renovate: datasource=apk depName=gettext versioning=loose
 ARG GETTEXT_VERSION="=1.0-r0"
 # renovate: datasource=apk depName=libssl3 versioning=loose
