@@ -4,6 +4,8 @@ services:
     build: .
     environment:
       - custom_router=/r.php
+    volumes:
+      - "./tests/nginx-pre-php.conf:/etc/nginx/conf.d/default/server/pre-php/test.conf:ro"
   sut:
     image: ${TEST_IMAGE_NAME:-jimsihk/alpine-php-nginx:local}
     depends_on:
