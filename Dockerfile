@@ -1,5 +1,5 @@
 ARG ARCH=
-FROM ${ARCH}alpine:3.24.1
+FROM ${ARCH}alpine:3.24.4
 
 LABEL org.opencontainers.image.title="alpine-php-nginx" \
       org.opencontainers.image.description="Lightweight container with NGINX & PHP-FPM based on Alpine Linux." \
@@ -10,25 +10,25 @@ LABEL org.opencontainers.image.title="alpine-php-nginx" \
 ARG PHP_V=83
 ENV PHP_RUNTIME=php${PHP_V}
 ENV PHP_FPM_RUNTIME=php-fpm${PHP_V}
-# renovate: datasource=repology depName=alpine_3_24/php83 versioning=loose
-ENV PHP_VERSION="=8.3.33-r0"
-# renovate: datasource=repology depName=alpine_3_24/php83-pecl-apcu versioning=loose
+# renovate: datasource=apk depName=php83 versioning=loose
+ENV PHP_VERSION="=8.3.37-r0"
+# renovate: datasource=apk depName=php83-pecl-apcu versioning=loose
 ARG PHP_PECL_APCU_VERSION="=5.1.28-r0"
-# renovate: datasource=repology depName=alpine_3_24/php83-pecl-memcached versioning=loose
+# renovate: datasource=apk depName=php83-pecl-memcached versioning=loose
 ARG PHP_PECL_MEMCACHED_VERSION="=3.4.0-r0"
-# renovate: datasource=repology depName=alpine_3_24/php83-pecl-redis versioning=loose
+# renovate: datasource=apk depName=php83-pecl-redis versioning=loose
 ARG PHP_PECL_REDIS_VERSION="=6.3.0-r0"
-# renovate: datasource=repology depName=alpine_3_24/nginx versioning=loose
-ARG NGINX_VERSION="=1.30.4-r1"
-# renovate: datasource=repology depName=alpine_3_24/runit versioning=loose
+# renovate: datasource=apk depName=nginx versioning=loose
+ARG NGINX_VERSION="=1.30.7-r0"
+# renovate: datasource=apk depName=runit versioning=loose
 ARG RUNIT_VERSION="=2.3.1-r0"
-# renovate: datasource=repology depName=alpine_3_24/curl versioning=loose
-ARG CURL_VERSION="=8.21.0-r0"
-# renovate: datasource=repology depName=alpine_3_24/gettext versioning=loose
+# renovate: datasource=apk depName=curl versioning=loose
+ARG CURL_VERSION="=8.23.0-r0"
+# renovate: datasource=apk depName=gettext versioning=loose
 ARG GETTEXT_VERSION="=1.0-r0"
-# renovate: datasource=repology depName=alpine_3_24/libssl3 versioning=loose
-ARG LIBSSL3_VERSION="=3.5.7-r0"
-# renovate: datasource=repology depName=alpine_3_24/gnu-libiconv versioning=loose
+# renovate: datasource=apk depName=libssl3 versioning=loose
+ARG LIBSSL3_VERSION="=3.5.9-r1"
+# renovate: datasource=apk depName=gnu-libiconv versioning=loose
 ARG GNU_LIBICONV_VERSION="=1.18-r0"
 
 # Install packages
@@ -99,7 +99,7 @@ RUN apk --no-cache add \
     && chown -R nobody:nobody /run /var/lib/nginx /var/log/nginx
 
 # Replace stock musl-linked php iconv with the GNU libiconv build from upstream.
-COPY --from=ghcr.io/erseco/alpine-php-webserver:3.20.11 /usr/lib/${PHP_RUNTIME}/modules/iconv.so /usr/lib/${PHP_RUNTIME}/modules/iconv.so
+COPY --from=docker.io/erseco/alpine-php-webserver:3.24-php83@sha256:219f2697a22dd61afc3bf63fcd84399c4acb511296ed3253213b8ff9b1f92ab6 /usr/lib/${PHP_RUNTIME}/modules/iconv.so /usr/lib/${PHP_RUNTIME}/modules/iconv.so
 
 # Add configuration files
 COPY --chown=nobody rootfs/ /
