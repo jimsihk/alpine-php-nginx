@@ -38,9 +38,10 @@ jobs:
           images: |
             ${{ env.IMAGE_NAME }}
             quay.io/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=false
           tags: |
             type=ref,event=tag
-            type=ref,event=branch
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
