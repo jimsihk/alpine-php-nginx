@@ -83,7 +83,7 @@ jobs:
           sarif_file: 'trivy-results.sarif'
 
       - name: Run Anchore scan
-        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
         id: anchore-scan
         with:
           image: 'docker.io/${{ env.IMAGE_NAME }}:${{ env.TEST_TAG }}'
@@ -98,7 +98,7 @@ jobs:
 
       - name: Get changed container files
         id: changed-files
-        uses: tj-actions/changed-files@24d32ffd492484c1d75e0c0b894501ddb9d30d62 # v47.0.0
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files: |
             rootfs/**
