@@ -1,5 +1,5 @@
 ARG ARCH=
-FROM ${ARCH}alpine:3.24.4
+FROM ${ARCH}alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
 
 LABEL org.opencontainers.image.title="alpine-php-nginx" \
       org.opencontainers.image.description="Lightweight container with NGINX & PHP-FPM based on Alpine Linux." \
@@ -99,7 +99,7 @@ RUN apk --no-cache add \
     && chown -R nobody:nobody /run /var/lib/nginx /var/log/nginx
 
 # Replace stock musl-linked php iconv with the GNU libiconv build from upstream.
-COPY --from=ghcr.io/erseco/alpine-php-webserver:3.23 /usr/lib/${PHP_RUNTIME}/modules/iconv.so /usr/lib/${PHP_RUNTIME}/modules/iconv.so
+COPY --from=ghcr.io/erseco/alpine-php-webserver:3.23@sha256:5c775ec53e806ad215bfd9c4c3d67319e78f50cfbb9cc7fc2e349f0f03f12b90 /usr/lib/${PHP_RUNTIME}/modules/iconv.so /usr/lib/${PHP_RUNTIME}/modules/iconv.so
 
 # Add configuration files
 COPY --chown=nobody rootfs/ /
