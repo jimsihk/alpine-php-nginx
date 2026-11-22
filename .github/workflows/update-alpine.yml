@@ -19,19 +19,19 @@ jobs:
   check-and-update:
     runs-on: ubuntu-latest
     steps:
-      - uses: step-security/harden-runner@v2
+      - uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
         with:
           egress-policy: audit
 
       - name: Generate release token
         id: generate_release_token
-        uses: tibdex/github-app-token@v2
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
         with:
           app_id: ${{ secrets.RELEASE_BOT_APP_ID }}
           private_key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
 
       - name: Checkout default branch
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.DEFAULT_BRANCH }}
           fetch-depth: 0
