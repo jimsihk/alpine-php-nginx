@@ -27,9 +27,9 @@ jobs:
           egress-policy: audit
 
       - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Log in to the Nightly Container registry
-        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550  # v4
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
         with:
           registry: ${{ env.IMAGE_REGISTRY }}
           username: ${{ github.actor }}
@@ -41,7 +41,7 @@ jobs:
           docker compose --file docker-compose.test.yml up --exit-code-from sut -t 10 --build
 
       - name: Build and push
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc  # v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
           push: true
@@ -98,7 +98,7 @@ jobs:
           egress-policy: audit
 
       - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Retry opened renovate PR which has been failed
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -125,7 +125,7 @@ jobs:
 
       - name: Check for dependency update
         if: ${{ needs.build-container.result == 'failure' }}
-        uses: Jolg42/action-renovate-checkbox@41dd2f6ef1c9e53ceda0145f24473ce53512d37a  # v1
+        uses: Jolg42/action-renovate-checkbox@41dd2f6ef1c9e53ceda0145f24473ce53512d37a # v1
         with:
           master-issue-id: ${{ vars.RENOVATE_ISSUE_ID }}
         env:
