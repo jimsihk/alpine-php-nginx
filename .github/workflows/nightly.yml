@@ -28,6 +28,7 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
       - name: Log in to the Nightly Container registry
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
         with:
@@ -78,7 +79,7 @@ jobs:
         with:
           egress-policy: audit
 
-      - uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55  # v5
+      - uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5
         with:
           owner: 'jimsihk'
           package-name: 'alpine-php-nginx'
@@ -99,6 +100,7 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
       - name: Retry opened renovate PR which has been failed
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
