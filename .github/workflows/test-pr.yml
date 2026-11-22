@@ -21,6 +21,7 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
       - name: Try build and Test
         run: |
           export TEST_IMAGE_NAME=${{ env.IMAGE_NAME }}:${{ github.sha }}
@@ -47,7 +48,7 @@ jobs:
           provenance: false
 
       - name: Run Trivy vulnerability scanner for PR
-        uses: aquasecurity/trivy-action@38b337fff0a2f984d5be173c99e3f633438167ec # master
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: 'docker.io/${{ env.IMAGE_NAME }}:${{ github.sha }}'
           format: 'table'
