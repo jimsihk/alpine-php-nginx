@@ -1,0 +1,134 @@
+name: Nightly Build
+
+on:
+  schedule:
+    - cron: '00 17 * * *' #UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_REGISTRY: ${{ vars.REGISTRY_NIGHTLY }}
+  # github.repository as <account>/<repo>
+  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_TAG: nightly
+  RETRY_PR_BRANCH_PREFIX: renovate
+
+jobs:
+  build-container:
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      packages: write # for docker/build-push-action to store image to package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Log in to the Nightly Container registry
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Test
+        run: |
+          export TEST_IMAGE_NAME=${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          docker compose --file docker-compose.test.yml up --exit-code-from sut -t 10 --build
+
+      - name: Build and push
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+  scan-nightly-build:
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+    uses: ./.github/workflows/scan.yml
+    needs: [build-container]
+    with:
+      image: ${{ vars.REGISTRY_NIGHTLY }}/${{ github.repository }}:nightly
+
+  tag-and-release:
+    permissions:
+      contents: write # for ncipollo/release-action to create release
+    uses: ./.github/workflows/auto-release.yml
+    needs: [build-container]
+    with:
+      image: ${{ vars.REGISTRY_NIGHTLY }}/${{ github.repository }}:nightly
+    secrets:
+      bot-client-id: ${{ secrets.RELEASE_BOT_CLIENT_ID }}
+      bot-private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+
+  # Prevent accidental deletion by not using dynamic Action variables
+  housekeep-nightly-containers:
+    permissions:
+      packages: write
+    needs: [scan-nightly-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
+        with:
+          owner: 'jimsihk'
+          package-name: 'alpine-php-nginx'
+          package-type: 'container'
+          delete-only-untagged-versions: 'true'
+          min-versions-to-keep: 0
+
+  retry-pr:
+    permissions:
+      contents: read
+      actions: write
+      pull-requests: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Retry opened renovate PR which has been failed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr list --state "open" --json headRefName --jq '.[] | select(.headRefName|test("${{ env.RETRY_PR_BRANCH_PREFIX }}/.")) | .headRefName' | while read PR_BRANCH
+          do
+            gh run list --event pull_request --status failure --workflow "Build and test PR" --branch "$PR_BRANCH" --limit 1 --json databaseId,headBranch --jq '.[] | join(" ")' | while read WORKFLOW_ID WORKFLOW_BRANCH
+            do
+              echo "Retrying for $WORKFLOW_BRANCH"
+              gh run rerun "$WORKFLOW_ID"
+            done
+          done
+
+  # Trigger renovate checking for updated alpine packages if failure
+  renovate-check:
+    permissions:
+      issues: write
+    runs-on: ubuntu-latest
+    needs: [build-container]
+    steps:
+      - uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
+        with:
+          egress-policy: audit
+
+      - name: Check for dependency update
+        if: ${{ needs.build-container.result == 'failure' }}
+        uses: Jolg42/action-renovate-checkbox@41dd2f6ef1c9e53ceda0145f24473ce53512d37a # 1.0.1
+        with:
+          master-issue-id: ${{ vars.RENOVATE_ISSUE_ID }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
