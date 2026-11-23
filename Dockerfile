@@ -99,7 +99,7 @@ RUN apk --no-cache add \
     && chown -R nobody:nobody /run /var/lib/nginx /var/log/nginx
 
 # Replace stock musl-linked php iconv with the GNU libiconv build from upstream.
-COPY --from=docker.io/erseco/alpine-php-webserver:3.24-php83@sha256:219f2697a22dd61afc3bf63fcd84399c4acb511296ed3253213b8ff9b1f92ab6 /usr/lib/${PHP_RUNTIME}/modules/iconv.so /usr/lib/${PHP_RUNTIME}/modules/iconv.so
+COPY --from=docker.io/erseco/alpine-php-webserver:3.24-php83@sha256:e87ee631d67ed57e4d0e3a82eab1276831f5ecd311b82e5a4960fcd1aeb0c592 /usr/lib/${PHP_RUNTIME}/modules/iconv.so /usr/lib/${PHP_RUNTIME}/modules/iconv.so
 
 # Add configuration files
 COPY --chown=nobody rootfs/ /
