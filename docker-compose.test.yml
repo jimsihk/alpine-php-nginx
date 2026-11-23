@@ -8,6 +8,6 @@ services:
     image: ${TEST_IMAGE_NAME:-jimsihk/alpine-php-nginx:local}
     depends_on:
       - app
-    command: /tmp/run_tests.sh
+    command: sh /tmp/run_tests.sh
     volumes:
       - "./run_tests.sh:/tmp/run_tests.sh:ro"
