@@ -80,7 +80,14 @@ If you want to extend or customize that you can do so by mounting a configuratio
 
 Nginx configuration:
 
-    docker run -v "`pwd`/nginx-server.conf:/etc/nginx/conf.d/server.conf" quay.io/jimsihk/alpine-php-nginx
+    docker run -v "`pwd`/nginx-server.conf:/etc/nginx/conf.d/default/server/custom.conf:ro" quay.io/jimsihk/alpine-php-nginx
+
+The default Nginx server supports two application-specific configuration directories:
+
+- `/etc/nginx/conf.d/default/server/pre-php/*.conf` is included **before** the generic PHP-FPM location handler. Use this directory for locations that must take precedence over the generic `.php` handler, such as front-controller compatibility routes.
+- `/etc/nginx/conf.d/default/server/*.conf` is included **after** the generic PHP-FPM location handler. This preserves the existing server-level extension point for additional locations and settings.
+
+Files in both directories are optional. You can add them to a derived image with `COPY` or mount them into a running container. Configuration files must contain directives valid in the Nginx `server` context.
 
 PHP configuration:
 
